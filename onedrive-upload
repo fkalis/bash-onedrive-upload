@@ -1,0 +1,44 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+        echo "Please specify at least one file to upload"
+        exit 1
+fi
+
+script_base_folder=$(dirname "$0")
+refresh_token_file="${script_base_folder}/.refresh_token"
+
+jq_path="${script_base_folder}/jq"
+
+api_auth_url="https://login.live.com/oauth20_token.srf"
+api_client_id=""
+api_client_secret=""
+
+api_upload_url="https://apis.live.net/v5.0"
+api_folder_id=""
+
+api_current_refresh_token=$(cat ${FOLDER}/.refresh_token)
+
+# Get access token and refresh refresh_token
+JSON_RESULT=$(curl "${api_auth_url}"
+    --data-urlencode "client_id=${api_client_id}"
+    --data-urlencode "client_secret=${api_client_secret}"
+    --data-urlencode "refresh_token=${api_current_refresh_token}"
+    --data-urlencode "grant_type=refresh_token"
+)
+
+echo $JSON_RESULT | "${jq_path}" -M -r '.refresh_token' > "${refresh_token_file}"
+api_access_token=$(echo $JSON_RESULT | "${FOLDER}/jq" -M -r '.access_token')
+
+# Configuration
+BASE_URL="https://apis.live.net/v5.0"
+FOLDER_ID="folder.2aa519acda9b2658.2AA519ACDA9B2658!24341"
+
+for current_file in "$@"; do
+        echo "Uploading '${current_file}'"
+        echo ""
+        current_filename=$(basename "${current_file}")
+        current_url="${api_upload_url}/${api_folder_id}/files/${current_filename}?access_token=${api_access_token}"
+
+        curl -T "$1" "${current_url}" > /dev/null
+done
