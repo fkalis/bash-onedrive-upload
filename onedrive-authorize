@@ -1,7 +1,6 @@
 #!/bin/bash
 script_base_folder=$(dirname "$0")
-
-source "${script_base_folder}/config.cfg"
+source "${script_base_folder}/onedrive.cfg"
 
 echo "Please open the following URL in your browser and follow the steps until you see a blank page:"
 echo "https://login.live.com/oauth20_authorize.srf?client_id=${api_client_id}&scope=wl.skydrive%20wl.skydrive_update%20wl.offline_access&response_type=code&redirect_uri=https://login.live.com/oauth20_desktop.srf"
