@@ -17,18 +17,13 @@ api_client_secret=""
 api_upload_url="https://apis.live.net/v5.0"
 api_folder_id="me/skydrive"
 
-api_current_refresh_token=$(cat ${FOLDER}/.refresh_token)
+api_current_refresh_token=$(cat ${refresh_token_file})
 
 # Get access token and refresh refresh_token
-JSON_RESULT=$(curl "${api_auth_url}"
-    --data-urlencode "client_id=${api_client_id}"
-    --data-urlencode "client_secret=${api_client_secret}"
-    --data-urlencode "refresh_token=${api_current_refresh_token}"
-    --data-urlencode "grant_type=refresh_token"
-)
+JSON_RESULT=$(curl "${api_auth_url}" --data-urlencode "client_id=${api_client_id}" --data-urlencode "client_secret=${api_client_secret}" --data-urlencode "refresh_token=${api_current_refresh_token}" --data-urlencode "grant_type=refresh_token")
 
 echo $JSON_RESULT | "${jq_path}" -M -r '.refresh_token' > "${refresh_token_file}"
-api_access_token=$(echo $JSON_RESULT | "${FOLDER}/jq" -M -r '.access_token')
+api_access_token=$(echo "${JSON_RESULT}" | "${jq_path}" -M -r '.access_token')
 
 for current_file in "$@"; do
         echo "Uploading '${current_file}'"
