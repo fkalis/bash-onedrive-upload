@@ -1,21 +1,14 @@
 #!/bin/bash
+script_base_folder=$(dirname "$0")
+source "${script_base_folder}/onedrive.cfg"
 
 if [ -z "$1" ]; then
         echo "Please specify at least one file to upload"
         exit 1
 fi
 
-script_base_folder=$(dirname "$0")
-refresh_token_file="${script_base_folder}/.refresh_token"
 
 jq_path="${script_base_folder}/jq"
-
-api_auth_url="https://login.live.com/oauth20_token.srf"
-api_client_id=""
-api_client_secret=""
-
-api_upload_url="https://apis.live.net/v5.0"
-api_folder_id="me/skydrive"
 
 api_current_refresh_token=$(cat ${refresh_token_file})
 

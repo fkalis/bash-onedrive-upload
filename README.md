@@ -28,4 +28,3 @@ After configuration you can now upload files (up to 100MB):
     $ ./onedrive-upload file1
     $ ./onedrive-upload file1 file2
     $ ./onedrive-upload file*.png
-
