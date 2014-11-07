@@ -1,7 +1,7 @@
 bash-onedrive-upload
 ====================
 
-Upload files to onedrive via linux command line
+Upload files to [Microsoft OneDrive](https://onedrive.live.com) via linux command line using the [REST API](http://msdn.microsoft.com/library/dn659752.aspx).
 
 Prerequisites
 -------------
@@ -14,6 +14,7 @@ Getting started
 Before you can use this tool, create an application in the [Microsoft account Developer Center](https://account.live.com/developers/applications) to generate your custom Client ID and Client secret. Notice, that you need to switch the API Setting "Mobile or desktop client app" to "yes".
 
 You should now be in possesion of credentials in the form
+
     Client ID: 00000000A2B3C495
     Client secret: 88qC3kX2Cbd0tXV2sBnqYbS321abcDEF
 
