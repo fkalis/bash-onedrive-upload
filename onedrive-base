@@ -1,0 +1,47 @@
+function error() {
+    echo "$1" >&2
+    exit 1
+}
+
+function exit_on_error() {
+    if (( $? > 0 )); then
+        exit 1
+    fi
+}
+
+function extractJSONValue() {
+    echo "$1" | tr -d '\r\n' | sed -n "s/.*\"$2\"\s*:\s*\"\([^\"]*\)\".*/\1/p"
+}
+
+function loadRefreshToken() {
+    if [ ! -f "${refresh_token_file}" ]; then
+        error "Refresh token not found, please complete the authorization process first"
+    fi
+    
+    cat "${refresh_token_file}"
+}
+
+function saveRefreshToken() {
+    if [ "$1" == "" ]; then
+        error "No refresh token received from API. Please try again or re-authorize."
+    fi
+    
+    echo "$1" > "${refresh_token_file}"
+}
+
+function acquireAccessToken() {
+    old_refresh_token=$(loadRefreshToken)
+    exit_on_error
+    
+    api_json_result=$(curl -s "${api_auth_url}" --data-urlencode "client_id=${api_client_id}" --data-urlencode "client_secret=${api_client_secret}" --data-urlencode "refresh_token=${old_refresh_token}" --data-urlencode "grant_type=refresh_token")
+    new_refresh_token=$(extractJSONValue "${api_json_result}" "refresh_token")
+    saveRefreshToken "${new_refresh_token}"
+    
+    current_access_token=$(extractJSONValue "${api_json_result}" "access_token")
+    
+    if [ "${current_access_token}" == "" ]; then
+        error "No access token received from API: ${api_json_result}"
+    fi
+    
+    echo "${current_access_token}"
+}

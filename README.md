@@ -8,7 +8,7 @@ Currently this script can only upload to one specific folder (configured in `one
 Prerequisites
 -------------
 
-This script uses `curl` for accessing the API and `jq` for parsing the json data. `jq` can be found [here](http://stedolan.github.io/jq/).
+This script uses `curl` for accessing the API.
 
 Getting started
 ---------------
@@ -25,7 +25,7 @@ Now insert these values in the matching variables in `onedrive.cfg`.
 Usage
 -----
 
-After the initial configuration you must authorize the app to user your OneDrive account. Run
+After the initial configuration you must authorize the app to use your OneDrive account. Run
 
     $ ./onedrive-authorize
 

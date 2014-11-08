@@ -1,22 +1,16 @@
 #!/bin/bash
+
 script_base_folder=$(dirname "$0")
 source "${script_base_folder}/onedrive.cfg"
+source "${script_base_folder}/onedrive-base"
 
 if [ -z "$1" ]; then
         echo "Please specify at least one file to upload"
         exit 1
 fi
 
-
-jq_path="${script_base_folder}/jq"
-
-api_current_refresh_token=$(cat ${refresh_token_file})
-
-# Get access token and refresh refresh_token
-JSON_RESULT=$(curl -s "${api_auth_url}" --data-urlencode "client_id=${api_client_id}" --data-urlencode "client_secret=${api_client_secret}" --data-urlencode "refresh_token=${api_current_refresh_token}" --data-urlencode "grant_type=refresh_token")
-
-echo $JSON_RESULT | "${jq_path}" -M -r '.refresh_token' > "${refresh_token_file}"
-api_access_token=$(echo "${JSON_RESULT}" | "${jq_path}" -M -r '.access_token')
+api_access_token=$(acquireAccessToken)
+exit_on_error
 
 for current_file in "$@"; do
         echo -n "Uploading '${current_file}'..."
