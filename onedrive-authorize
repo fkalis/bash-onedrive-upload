@@ -7,11 +7,11 @@ echo "https://login.live.com/oauth20_authorize.srf?client_id=${api_client_id}&sc
 echo ""
 echo "When ready, please enter the value of the code parameter (from the URL of the blank page) and press return"
 read code
-JSON_RESULT=$(curl -d "client_id=${api_client_id}&client_secret=${api_client_secret}&code=${code}&grant_type=authorization_code" -X POST "${api_auth_url})
+JSON_RESULT=$(curl -d "client_id=${api_client_id}&client_secret=${api_client_secret}&code=${code}&grant_type=authorization_code&redirect_uri=https://login.live.com/oauth20_desktop.srf" -X POST "${api_auth_url}")
 
-REFRESH_TOKEN=$(echo $JSON_RESULT | "${jq_path}" -M -r '.refresh_token')
+REFRESH_TOKEN=$(echo "${JSON_RESULT}" | "${jq_path}" -M -r '.refresh_token')
 if [ "${REFRESH_TOKEN}" != "null" ]; then 
-    echo "${REFRESH_TOKEN} > "${refresh_token_file}"
+    echo "${REFRESH_TOKEN}" > "${refresh_token_file}"
     echo "It seems like we have a refresh token, so we are ready to go"
 else
     echo "Something went wrong, here is the API response:"
