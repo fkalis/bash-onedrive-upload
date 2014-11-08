@@ -17,8 +17,8 @@ for current_file in "$@"; do
         current_filename=$(basename "${current_file}")
         current_url="${api_upload_url}/${api_folder_id}/files/${current_filename}?access_token=${api_access_token}"
 
-        status_code=$(curl -o /dev/null -w "%{http_code}" -s -T "$1" "${current_url}")
-        if (( ${status_code} == 200 )); then
+        status_code=$(curl -o /dev/null -w "%{http_code}" -s -T "${current_file}" "${current_url}")
+        if (( ${status_code} == 200 || ${status_code} == 201 )); then
             echo "Done"
         else
             echo "Failure (Code: ${status_code})"
