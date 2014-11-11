@@ -12,15 +12,5 @@ fi
 api_access_token=$(acquireAccessToken)
 exit_on_error
 
-for current_file in "$@"; do
-        echo -n "Uploading '${current_file}'..."
-        current_filename=$(basename "${current_file}")
-        current_url="${api_upload_url}/${api_folder_id}/files/${current_filename}?access_token=${api_access_token}"
-
-        status_code=$(curl -o /dev/null -w "%{http_code}" -s -T "${current_file}" "${current_url}")
-        if (( ${status_code} == 200 || ${status_code} == 201 )); then
-            echo "Done"
-        else
-            echo "Failure (Code: ${status_code})"
-        fi
-done
+export api_access_token
+printf "%s\0" "${@}" | xargs -0 --max-procs=${max_upload_threads} -i'{}' bash -c "uploadFile \"{}\""

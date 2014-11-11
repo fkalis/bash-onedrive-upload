@@ -45,3 +45,17 @@ function acquireAccessToken() {
     
     echo "${current_access_token}"
 }
+
+function uploadFile() {
+    current_file="$1"
+    current_filename=$(basename "${current_file}")
+    current_url="${api_upload_url}/${api_folder_id}/files/${current_filename}?access_token=${api_access_token}"
+    
+    status_code=$(curl -o /dev/null -w "%{http_code}" -s -T "${current_file}" "${current_url}")
+    if (( ${status_code} == 200 || ${status_code} == 201 )); then
+        echo "Successfully uploaded '$1'"
+    else
+        echo "An error has occurred while uploading '$1' (Code: ${status_code})"
+    fi
+}
+export -f uploadFile
