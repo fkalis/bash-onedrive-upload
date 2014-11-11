@@ -40,6 +40,8 @@ After the authorization process has successfully completed you can now upload fi
 Configuration
 -------------
 
+### Specify an alternate upload folder
+
 If you want to use a folder other than the root folder of your OneDrive, you need to find out its unique folder id.
 
 Open your the [OneDrive Web Interface](https://onedrive.live.com) and navigate to the folder, you want to configure as your new upload folder. The address bar should now show a URL like
@@ -53,3 +55,9 @@ The folder id can be constructed from the parameters `cid` and `id`:
 The folder id for the example URL reads as follows (you have to work with the decoded URL, e.g. `%21` decodes to `!`):
 
     folder.123419ACDA5678AB.123419ACDA5678AB!45321
+
+### Number of simultaneous uploads
+
+If the script does not fully utilize your bandwidth, you can maybe speed things up a little bit by increasing the value of `max_upload_threads`.
+
+When you now start the upload more than one file, the script will start up to `max_upload_threads` parallel uploads, but only one thread per file.
