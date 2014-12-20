@@ -60,4 +60,4 @@ The folder id for the example URL reads as follows (you have to work with the de
 
 If the script does not fully utilize your bandwidth, you can maybe speed things up a little bit by increasing the value of `max_upload_threads`.
 
-When you now start the upload more than one file, the script will start up to `max_upload_threads` parallel uploads, but only one thread per file.
+When you now start the upload of more than one file, the script will start up to `max_upload_threads` parallel uploads, but only one thread per file.
