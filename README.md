@@ -37,6 +37,12 @@ After the authorization process has successfully completed you can now upload fi
     $ ./onedrive-upload file1 file2
     $ ./onedrive-upload file*.png
 
+You can also specify a destination folder relative to the folder configured in `onedrive.cfg`:
+
+    $ ./onedrive-upload -f "relative/path" file1
+
+This command will automatically determine all of the needed folder ids and recursively create all subfolders that do not yet exist.
+
 Configuration
 -------------
 
