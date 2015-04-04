@@ -1,8 +1,34 @@
 #!/bin/bash
 
 script_base_folder=$(dirname "$0")
+script_base_name=$(basename "$0")
 source "${script_base_folder}/onedrive.cfg"
 source "${script_base_folder}/onedrive-base"
+json_parser="${script_base_folder}/libs/json/bash-json-parser"
+
+while [[ $# -ge 1 ]]; do
+    case $1 in
+        -h|--help)
+            echo "Usage: ${script_base_name} [OPTIONS] file1 [file2...]"
+            echo ""
+            echo "Options:"
+            echo "  -h, --help    Show this help"
+            echo "  -f, --folder  Upload files into this remote folder"
+            echo "                Directory names are separated with a slash, e.g."
+            echo "                rootFolder/subFolder"
+            echo "                Do NOT use a trailing slash!"
+            exit 0
+            ;;
+        -f|--folder)
+            shift
+            folder_name="$1"
+            shift
+            ;;
+        *)
+            break;
+            ;;
+    esac
+done
 
 if [ -z "$1" ]; then
         echo "Please specify at least one file to upload"
@@ -13,4 +39,9 @@ api_access_token=$(acquireAccessToken)
 exit_on_error
 
 export api_access_token
+if [ -n "${folder_name}" ]; then
+    IFS='/' read -a folder_array <<< "${folder_name}"
+    export api_folder_id=$(getOrCreateFolder "${folder_array[@]}")
+fi
+
 printf "%s\0" "${@}" | xargs -0 --max-procs=${max_upload_threads} -i'{}' bash -c "uploadFile \"{}\""

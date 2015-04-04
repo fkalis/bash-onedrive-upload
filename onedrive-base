@@ -2,6 +2,7 @@ function error() {
     echo "$1" >&2
     exit 1
 }
+export -f error
 
 function exit_on_error() {
     if (( $? > 0 )); then
@@ -13,6 +14,9 @@ function extractJSONValue() {
     echo "$1" | tr -d '\r\n' | sed -n "s/.*\"$2\"\s*:\s*\"\([^\"]*\)\".*/\1/p"
 }
 
+# ------------------------ #
+# --- TOKEN MANAGEMENT --- #
+# ------------------------ #
 function loadRefreshToken() {
     if [ ! -f "${refresh_token_file}" ]; then
         error "Refresh token not found, please complete the authorization process first"
@@ -46,7 +50,48 @@ function acquireAccessToken() {
     echo "${current_access_token}"
 }
 
+# ------------------------ #
+# --- FOLDER TRAVERSAL --- #
+# ------------------------ #
+function findFolderId() {
+    api_json_result=$(curl -s "${api_base_url}/$1/files?access_token=${api_access_token}")
+    api_parsed_json_result=$(echo "${api_json_result}" | ${json_parser})
+    index=$(echo "${api_parsed_json_result}" | grep -E "^data.[0-9]+.name=$2\$" | cut -d. -f2)
+    echo "${api_parsed_json_result}" | grep -E "^data.${index}.id=folder." | cut -d= -f2-
+}
+
+function createFolder() {
+    api_json_result=$(curl -s "${api_base_url}/$1?access_token=${api_access_token}" --data-urlencode "name=$2")
+    api_parsed_json_result=$(echo "${api_json_result}" | ${json_parser})
+    error=$(echo "${api_parsed_json_result}" | grep -E "^error.message" | cut -d= -f2-)
+    if [ -n "${error}" ]; then
+        error "${error}"
+    fi
+    echo "${api_parsed_json_result}" | grep -E "^id=" | cut -d= -f2-
+}
+
+function getOrCreateFolder() {
+    current_folder_id="${api_folder_id}"
+    while [[ $# -ge 1 ]]; do
+        next_folder_id=$(findFolderId "${current_folder_id}" "$1")
+        if [ -z "${next_folder_id}" ]; then
+            next_folder_id=$(createFolder "${current_folder_id}" "$1")
+            sleep 5
+        fi
+        current_folder_id="${next_folder_id}"
+        shift
+    done
+    echo "${current_folder_id}"
+}
+
+# ------------------- #
+# --- FILE UPLOAD --- #
+# ------------------- #
 function uploadFile() {
+    if [ ! -f "$1" ]; then
+        error "An error has occurred while uploading '$1' (File does not exist)"
+    fi
+
     current_file="$1"
     current_filename=$(basename "${current_file}")
     current_url="${api_base_url}/${api_folder_id}/files/${current_filename}?access_token=${api_access_token}"
@@ -55,7 +100,7 @@ function uploadFile() {
     if (( ${status_code} == 200 || ${status_code} == 201 )); then
         echo "Successfully uploaded '$1'"
     else
-        echo "An error has occurred while uploading '$1' (Code: ${status_code})"
+        error "An error has occurred while uploading '$1' (Code: ${status_code})"
     fi
 }
 export -f uploadFile
