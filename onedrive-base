@@ -49,7 +49,7 @@ function acquireAccessToken() {
 function uploadFile() {
     current_file="$1"
     current_filename=$(basename "${current_file}")
-    current_url="${api_upload_url}/${api_folder_id}/files/${current_filename}?access_token=${api_access_token}"
+    current_url="${api_base_url}/${api_folder_id}/files/${current_filename}?access_token=${api_access_token}"
     
     status_code=$(curl -o /dev/null -w "%{http_code}" -s -T "${current_file}" "${current_url}")
     if (( ${status_code} == 200 || ${status_code} == 201 )); then
