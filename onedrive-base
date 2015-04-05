@@ -9,10 +9,12 @@ function exit_on_error() {
         exit 1
     fi
 }
+export -f exit_on_error
 
 function extractJSONValue() {
     echo "$1" | tr -d '\r\n' | sed -n "s/.*\"$2\"\s*:\s*\"\([^\"]*\)\".*/\1/p"
 }
+export -f extractJSONValue
 
 # ------------------------ #
 # --- TOKEN MANAGEMENT --- #
@@ -24,6 +26,7 @@ function loadRefreshToken() {
     
     cat "${refresh_token_file}"
 }
+export -f loadRefreshToken
 
 function saveRefreshToken() {
     if [ "$1" == "" ]; then
@@ -32,6 +35,7 @@ function saveRefreshToken() {
     
     echo "$1" > "${refresh_token_file}"
 }
+export -f saveRefreshToken
 
 function acquireAccessToken() {
     old_refresh_token=$(loadRefreshToken)
@@ -49,6 +53,7 @@ function acquireAccessToken() {
     
     echo "${current_access_token}"
 }
+export -f acquireAccessToken
 
 # ------------------------ #
 # --- FOLDER TRAVERSAL --- #
@@ -59,6 +64,7 @@ function findFolderId() {
     index=$(echo "${api_parsed_json_result}" | grep -E "^data.[0-9]+.name=$2\$" | cut -d. -f2)
     echo "${api_parsed_json_result}" | grep -E "^data.${index}.id=folder." | cut -d= -f2-
 }
+export -f findFolderId
 
 function createFolder() {
     api_json_result=$(curl -s "${api_base_url}/$1?access_token=${api_access_token}" --data-urlencode "name=$2")
@@ -69,6 +75,7 @@ function createFolder() {
     fi
     echo "${api_parsed_json_result}" | grep -E "^id=" | cut -d= -f2-
 }
+export -f createFolder
 
 function getOrCreateFolder() {
     current_folder_id="${api_folder_id}"
@@ -83,6 +90,7 @@ function getOrCreateFolder() {
     done
     echo "${current_folder_id}"
 }
+export -f getOrCreateFolder
 
 # ------------------- #
 # --- FILE UPLOAD --- #

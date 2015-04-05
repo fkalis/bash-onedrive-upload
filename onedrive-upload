@@ -1,10 +1,12 @@
 #!/bin/bash
 
-script_base_folder=$(dirname "$0")
-script_base_name=$(basename "$0")
+export script_base_folder=$(dirname "$0")
+export script_base_name=$(basename "$0")
+
 source "${script_base_folder}/onedrive.cfg"
 source "${script_base_folder}/onedrive-base"
-json_parser="${script_base_folder}/libs/json/bash-json-parser"
+
+export json_parser="${script_base_folder}/libs/json/bash-json-parser"
 
 while [[ $# -ge 1 ]]; do
     case $1 in
