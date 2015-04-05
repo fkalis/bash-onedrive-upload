@@ -37,10 +37,6 @@ if [ -z "$1" ]; then
         exit 1
 fi
 
-api_access_token=$(acquireAccessToken)
-exit_on_error
-
-export api_access_token
 if [ -n "${folder_name}" ]; then
     IFS='/' read -a folder_array <<< "${folder_name}"
     export api_folder_id=$(getOrCreateFolder "${folder_array[@]}")

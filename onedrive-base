@@ -33,7 +33,9 @@ function saveRefreshToken() {
         error "No refresh token received from API. Please try again or re-authorize."
     fi
     
-    echo "$1" > "${refresh_token_file}"
+    echo "$$" >&2
+    echo "$1" > "${refresh_token_file}.$$"
+    mv "${refresh_token_file}.$$" "${refresh_token_file}"
 }
 export -f saveRefreshToken
 
@@ -78,7 +80,9 @@ function createFolder() {
 export -f createFolder
 
 function getOrCreateFolder() {
+    local api_access_token=$(acquireAccessToken)
     local current_folder_id="${api_folder_id}"
+    
     while [[ $# -ge 1 ]]; do
         local next_folder_id=$(findFolderId "${current_folder_id}" "$1")
         if [ -z "${next_folder_id}" ]; then
@@ -99,6 +103,8 @@ function uploadFile() {
     if [ ! -f "$1" ]; then
         error "An error has occurred while uploading '$1' (File does not exist)"
     fi
+    
+    local api_access_token=$(acquireAccessToken)
 
     local current_file="$1"
     local current_filename=$(basename "${current_file}")
