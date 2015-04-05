@@ -7,6 +7,7 @@ source "${script_base_folder}/onedrive.cfg"
 source "${script_base_folder}/onedrive-base"
 
 export json_parser="${script_base_folder}/libs/json/bash-json-parser"
+export debug_mode=0
 
 while [[ $# -ge 1 ]]; do
     case $1 in
@@ -26,6 +27,10 @@ while [[ $# -ge 1 ]]; do
             folder_name="$1"
             shift
             ;;
+        -d|--debug)
+            shift
+            debug_mode=1
+            ;;
         *)
             break;
             ;;
@@ -40,6 +45,7 @@ fi
 if [ -n "${folder_name}" ]; then
     IFS='/' read -a folder_array <<< "${folder_name}"
     export api_folder_id=$(getOrCreateFolder "${folder_array[@]}")
+    debug "api_folder_id is now '${api_folder_id}'"
 fi
 
 printf "%s\0" "${@}" | xargs -0 --max-procs=${max_upload_threads} -i'{}' bash -c "uploadFile \"{}\""

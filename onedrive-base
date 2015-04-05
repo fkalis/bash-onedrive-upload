@@ -11,6 +11,13 @@ function exit_on_error() {
 }
 export -f exit_on_error
 
+function debug() {
+    if [ "${debug_mode}" == "1" ]; then
+        echo "$1" >&2
+    fi
+}
+export -f debug
+
 function extractJSONValue() {
     echo "$1" | tr -d '\r\n' | sed -n "s/.*\"$2\"\s*:\s*\"\([^\"]*\)\".*/\1/p"
 }
@@ -23,7 +30,7 @@ function loadRefreshToken() {
     if [ ! -f "${refresh_token_file}" ]; then
         error "Refresh token not found, please complete the authorization process first"
     fi
-    
+
     cat "${refresh_token_file}"
 }
 export -f loadRefreshToken
@@ -34,24 +41,28 @@ function saveRefreshToken() {
     fi
     
     echo "$1" > "${refresh_token_file}.$$"
-    mv "${refresh_token_file}.$$" "${refresh_token_file}"
+    mv "${refresh_token_file}.$$" "${refresh_token_file}" > /dev/null 2>&1
+    if [ "$?" != "0" ]; then
+        debug "Could not write refresh_token because of another process, deleting ${refresh_token_file}.$$"
+        rm "${refresh_token_file}.$$"
+    fi
 }
 export -f saveRefreshToken
 
 function acquireAccessToken() {
     local old_refresh_token=$(loadRefreshToken)
     exit_on_error
-    
+
     local api_json_result=$(curl -s "${api_auth_url}" --data-urlencode "client_id=${api_client_id}" --data-urlencode "client_secret=${api_client_secret}" --data-urlencode "refresh_token=${old_refresh_token}" --data-urlencode "grant_type=refresh_token")
     local new_refresh_token=$(extractJSONValue "${api_json_result}" "refresh_token")
     saveRefreshToken "${new_refresh_token}"
-    
+
     local current_access_token=$(extractJSONValue "${api_json_result}" "access_token")
-    
+
     if [ "${current_access_token}" == "" ]; then
         error "No access token received from API: ${api_json_result}"
     fi
-    
+
     echo "${current_access_token}"
 }
 export -f acquireAccessToken
@@ -68,6 +79,7 @@ function findFolderId() {
 export -f findFolderId
 
 function createFolder() {
+    debug "Creating folder '$2' in '$1'"
     local api_json_result=$(curl -s "${api_base_url}/$1?access_token=${api_access_token}" --data-urlencode "name=$2")
     local api_parsed_json_result=$(echo "${api_json_result}" | ${json_parser})
     error=$(echo "${api_parsed_json_result}" | grep -E "^error.message" | cut -d= -f2-)
