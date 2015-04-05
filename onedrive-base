@@ -33,7 +33,6 @@ function saveRefreshToken() {
         error "No refresh token received from API. Please try again or re-authorize."
     fi
     
-    echo "$$" >&2
     echo "$1" > "${refresh_token_file}.$$"
     mv "${refresh_token_file}.$$" "${refresh_token_file}"
 }
