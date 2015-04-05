@@ -38,14 +38,14 @@ function saveRefreshToken() {
 export -f saveRefreshToken
 
 function acquireAccessToken() {
-    old_refresh_token=$(loadRefreshToken)
+    local old_refresh_token=$(loadRefreshToken)
     exit_on_error
     
-    api_json_result=$(curl -s "${api_auth_url}" --data-urlencode "client_id=${api_client_id}" --data-urlencode "client_secret=${api_client_secret}" --data-urlencode "refresh_token=${old_refresh_token}" --data-urlencode "grant_type=refresh_token")
-    new_refresh_token=$(extractJSONValue "${api_json_result}" "refresh_token")
+    local api_json_result=$(curl -s "${api_auth_url}" --data-urlencode "client_id=${api_client_id}" --data-urlencode "client_secret=${api_client_secret}" --data-urlencode "refresh_token=${old_refresh_token}" --data-urlencode "grant_type=refresh_token")
+    local new_refresh_token=$(extractJSONValue "${api_json_result}" "refresh_token")
     saveRefreshToken "${new_refresh_token}"
     
-    current_access_token=$(extractJSONValue "${api_json_result}" "access_token")
+    local current_access_token=$(extractJSONValue "${api_json_result}" "access_token")
     
     if [ "${current_access_token}" == "" ]; then
         error "No access token received from API: ${api_json_result}"
@@ -59,16 +59,16 @@ export -f acquireAccessToken
 # --- FOLDER TRAVERSAL --- #
 # ------------------------ #
 function findFolderId() {
-    api_json_result=$(curl -s "${api_base_url}/$1/files?access_token=${api_access_token}")
-    api_parsed_json_result=$(echo "${api_json_result}" | ${json_parser})
-    index=$(echo "${api_parsed_json_result}" | grep -E "^data.[0-9]+.name=$2\$" | cut -d. -f2)
+    local api_json_result=$(curl -s "${api_base_url}/$1/files?access_token=${api_access_token}")
+    local api_parsed_json_result=$(echo "${api_json_result}" | ${json_parser})
+    local index=$(echo "${api_parsed_json_result}" | grep -E "^data.[0-9]+.name=$2\$" | cut -d. -f2)
     echo "${api_parsed_json_result}" | grep -E "^data.${index}.id=folder." | cut -d= -f2-
 }
 export -f findFolderId
 
 function createFolder() {
-    api_json_result=$(curl -s "${api_base_url}/$1?access_token=${api_access_token}" --data-urlencode "name=$2")
-    api_parsed_json_result=$(echo "${api_json_result}" | ${json_parser})
+    local api_json_result=$(curl -s "${api_base_url}/$1?access_token=${api_access_token}" --data-urlencode "name=$2")
+    local api_parsed_json_result=$(echo "${api_json_result}" | ${json_parser})
     error=$(echo "${api_parsed_json_result}" | grep -E "^error.message" | cut -d= -f2-)
     if [ -n "${error}" ]; then
         error "${error}"
@@ -78,9 +78,9 @@ function createFolder() {
 export -f createFolder
 
 function getOrCreateFolder() {
-    current_folder_id="${api_folder_id}"
+    local current_folder_id="${api_folder_id}"
     while [[ $# -ge 1 ]]; do
-        next_folder_id=$(findFolderId "${current_folder_id}" "$1")
+        local next_folder_id=$(findFolderId "${current_folder_id}" "$1")
         if [ -z "${next_folder_id}" ]; then
             next_folder_id=$(createFolder "${current_folder_id}" "$1")
             sleep 5
@@ -100,11 +100,11 @@ function uploadFile() {
         error "An error has occurred while uploading '$1' (File does not exist)"
     fi
 
-    current_file="$1"
-    current_filename=$(basename "${current_file}")
-    current_url="${api_base_url}/${api_folder_id}/files/${current_filename}?access_token=${api_access_token}"
+    local current_file="$1"
+    local current_filename=$(basename "${current_file}")
+    local current_url="${api_base_url}/${api_folder_id}/files/${current_filename}?access_token=${api_access_token}"
     
-    status_code=$(curl -o /dev/null -w "%{http_code}" -s -T "${current_file}" "${current_url}")
+    local status_code=$(curl -o /dev/null -w "%{http_code}" -s -T "${current_file}" "${current_url}")
     if (( ${status_code} == 200 || ${status_code} == 201 )); then
         echo "Successfully uploaded '$1'"
     else
