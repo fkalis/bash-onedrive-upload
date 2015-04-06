@@ -22,11 +22,6 @@ function debug() {
 }
 export -f debug
 
-function extractJSONValue() {
-    echo "$1" | tr -d '\r\n' | sed -n "s/.*\"$2\"\s*:\s*\"\([^\"]*\)\".*/\1/p"
-}
-export -f extractJSONValue
-
 function urlencode() {
 	curl -s -o /dev/null -w %{url_effective} --get --data-urlencode "$1" "" | cut -b3-
 }
