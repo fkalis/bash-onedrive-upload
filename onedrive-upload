@@ -43,8 +43,12 @@ if [ -z "$1" ]; then
 fi
 
 if [ -n "${folder_name}" ]; then
+	# TODO Throw an error, if $2 contains illegal characters like double quotes
     IFS='/' read -a folder_array <<< "${folder_name}"
-    export api_folder_id=$(getOrCreateFolder "${folder_array[@]}")
+    api_folder_id=$(getOrCreateFolder "${folder_array[@]}")
+	exit_on_error
+	
+	export api_folder_id
     debug "api_folder_id is now '${api_folder_id}'"
 fi
 

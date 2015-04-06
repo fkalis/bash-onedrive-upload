@@ -1,5 +1,6 @@
 export api_auth_url="https://login.live.com/oauth20_token.srf"
 export api_base_url="https://api.onedrive.com/v1.0"
+export get_json_value="cut -d= -f2-"
 
 function error() {
     echo "$1" >&2
@@ -25,6 +26,74 @@ function extractJSONValue() {
     echo "$1" | tr -d '\r\n' | sed -n "s/.*\"$2\"\s*:\s*\"\([^\"]*\)\".*/\1/p"
 }
 export -f extractJSONValue
+
+function urlencode() {
+	curl -s -o /dev/null -w %{url_effective} --get --data-urlencode "$1" "" | cut -b3-
+}
+export -f urlencode
+
+# ------------------ #
+# --- cURL calls --- #
+# ------------------ #
+function curl_refresh_access_token() {
+	curl -s \
+		--data-urlencode "client_id=${api_client_id}" \
+		--data-urlencode "client_secret=${api_client_secret}" \
+		--data-urlencode "refresh_token=${old_refresh_token}" \
+		--data-urlencode "grant_type=refresh_token" \
+		"${api_auth_url}" | "${json_parser}"
+}
+export -f curl_refresh_access_token
+
+# $1=folder_id
+function curl_get_children() {
+	local folder_id=$(urlencode "$1")
+
+	curl -s	"${api_base_url}/drive/items/${folder_id}/children?access_token=${api_access_token}" | "${json_parser}"
+}
+export -f curl_get_children
+
+function curl_get_children_of_root() {
+	curl -s	"${api_base_url}/drive/root/children?access_token=${api_access_token}" | "${json_parser}"
+}
+export -f curl_get_children_of_root
+
+# $1=parent_folder_id
+# $2=new_folder_name
+function curl_create_folder() {
+	local json_payload="{\"name\":\"$2\",\"folder\":{},\"@name.conflictBehavior\":\"rename\"}"
+	local url
+	
+	if [ -z "$1" ]; then
+		url="${api_base_url}/drive/root/children?access_token=${api_access_token}"
+	else
+		local folder_id=$(urlencode "$1")
+		url="${api_base_url}/drive/items/${folder_id}/children?access_token=${api_access_token}"
+	fi
+
+	curl -s \
+		-X POST \
+		-H "Content-Type: application/json" \
+		-d "${json_payload}" \
+		"${url}" | "${json_parser}"
+}
+export -f curl_create_folder
+
+# $1=folder_id
+# $2=file
+function curl_upload_file() {
+    local raw_filename=$(basename "$2")
+	local filename=$(urlencode "${raw_filename}")
+	local folder_id=$(urlencode "$1")
+
+	curl -s \
+		-o /dev/null \
+		-w "%{http_code}" \
+		-H "X-HTTP-Method-Override: PUT" \
+		-T "$2" \
+		"${api_base_url}/drive/items/${folder_id}/children/${filename}/content?access_token=${api_access_token}"
+}
+export -f curl_upload_file
 
 # ------------------------ #
 # --- TOKEN MANAGEMENT --- #
@@ -56,14 +125,14 @@ function acquireAccessToken() {
     local old_refresh_token=$(loadRefreshToken)
     exit_on_error
 
-    local api_json_result=$(curl -s "${api_auth_url}" --data-urlencode "client_id=${api_client_id}" --data-urlencode "client_secret=${api_client_secret}" --data-urlencode "refresh_token=${old_refresh_token}" --data-urlencode "grant_type=refresh_token")
-    local new_refresh_token=$(extractJSONValue "${api_json_result}" "refresh_token")
+    local api_parsed_json_result=$(curl_refresh_access_token)
+    local new_refresh_token=$(echo "${api_parsed_json_result}" | grep "refresh_token" | ${get_json_value})
     saveRefreshToken "${new_refresh_token}"
 
-    local current_access_token=$(extractJSONValue "${api_json_result}" "access_token")
-
+    local current_access_token=$(echo "${api_parsed_json_result}" | grep "access_token" | ${get_json_value})
+	
     if [ "${current_access_token}" == "" ]; then
-        error "No access token received from API: ${api_json_result}"
+        error "No access token received from API: ${api_parsed_json_result}"
     fi
 
     echo "${current_access_token}"
@@ -74,45 +143,56 @@ export -f acquireAccessToken
 # --- FOLDER TRAVERSAL --- #
 # ------------------------ #
 function findFolderId() {
-    #local api_json_result=$(curl -s "${api_base_url}/$1/files?access_token=${api_access_token}")
-	local api_json_result=$(curl -s "${api_base_url}/drive/items/$1/children?access_token=${api_access_token}")
-    local api_parsed_json_result=$(echo "${api_json_result}" | ${json_parser})
+	local api_parsed_json_result
+	if [ -z "$1" ]; then
+		debug "Searching for '$2' in root"
+		api_parsed_json_result=$(curl_get_children_of_root)
+	else
+		debug "Searching for '$2' in '$1'"
+		api_parsed_json_result=$(curl_get_children "$1")
+	fi
+
+	local error_message=$(echo "${api_parsed_json_result}" | grep -E "^error.message=" | ${get_json_value})
+	if [ -n "${error_message}" ]; then
+		error "An error has occurred while fetching children of '$1' (${error_message})"
+	fi
+
     local index=$(echo "${api_parsed_json_result}" | grep -E "^value.[0-9]+.name=$2\$" | cut -d. -f2)
-    echo "${api_parsed_json_result}" | grep -E "^value.${index}.id=" | cut -d= -f2-
+    echo "${api_parsed_json_result}" | grep -E "^value.${index}.id=" | ${get_json_value}
 }
 export -f findFolderId
 
-function jsonCreateFolder() {
-	# TODO Escape double quotes in $1
-	echo "{\"name\":\"$1\",\"folder\":{},\"@name.conflictBehavior\":\"rename\"}"
-}
-
 function createFolder() {
     debug "Creating folder '$2' in '$1'"
-	local json_payload=$(jsonCreateFolder "$2")
-	local api_json_result=$(curl -s -H "Content-Type: application/json" -X POST -d "${json_payload}" "${api_base_url}/drive/items/$1/children?access_token=${api_access_token}")
-    local api_parsed_json_result=$(echo "${api_json_result}" | ${json_parser})
-    error=$(echo "${api_parsed_json_result}" | grep -E "^error.message" | cut -d= -f2-)
-    if [ -n "${error}" ]; then
-        error "${error}"
+	local api_parsed_json_result=$(curl_create_folder "$1" "$2")
+
+    local error_message=$(echo "${api_parsed_json_result}" | grep -E "^error.message" | ${get_json_value})
+    if [ -n "${error_message}" ]; then
+        error "An error has occurred while creating folder '$2' in '$1' (${error_message})"
     fi
-    echo "${api_parsed_json_result}" | grep -E "^id=" | cut -d= -f2-
+
+    echo "${api_parsed_json_result}" | grep -E "^id=" | ${get_json_value}
 }
 export -f createFolder
 
 function getOrCreateFolder() {
     local api_access_token=$(acquireAccessToken)
     local current_folder_id="${api_folder_id}"
+	local next_folder_id
     
     while [[ $# -ge 1 ]]; do
-        local next_folder_id=$(findFolderId "${current_folder_id}" "$1")
+        next_folder_id=$(findFolderId "${current_folder_id}" "$1")
+		exit_on_error
+
         if [ -z "${next_folder_id}" ]; then
             next_folder_id=$(createFolder "${current_folder_id}" "$1")
-            sleep 5
+			exit_on_error
         fi
+
         current_folder_id="${next_folder_id}"
         shift
     done
+
     echo "${current_folder_id}"
 }
 export -f getOrCreateFolder
@@ -127,11 +207,7 @@ function uploadFile() {
     
     local api_access_token=$(acquireAccessToken)
 
-    local current_file="$1"
-    local current_filename=$(basename "${current_file}")
-    local current_url="${api_base_url}/drive/items/${api_folder_id}/children/${current_filename}/content?access_token=${api_access_token}"
-    
-    local status_code=$(curl -o /dev/null -w "%{http_code}" -s -H "X-HTTP-Method-Override: PUT" -T "${current_file}" "${current_url}")
+    local status_code=$(curl_upload_file "${api_folder_id}" "$1")
     if (( "${status_code}" == 200 || "${status_code}" == 201 )); then
         echo "Successfully uploaded '$1'"
     else
