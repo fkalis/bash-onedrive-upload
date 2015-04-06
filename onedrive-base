@@ -1,3 +1,6 @@
+export api_auth_url="https://login.live.com/oauth20_token.srf"
+export api_base_url="https://api.onedrive.com/v1.0"
+
 function error() {
     echo "$1" >&2
     exit 1
@@ -71,16 +74,23 @@ export -f acquireAccessToken
 # --- FOLDER TRAVERSAL --- #
 # ------------------------ #
 function findFolderId() {
-    local api_json_result=$(curl -s "${api_base_url}/$1/files?access_token=${api_access_token}")
+    #local api_json_result=$(curl -s "${api_base_url}/$1/files?access_token=${api_access_token}")
+	local api_json_result=$(curl -s "${api_base_url}/drive/items/$1/children?access_token=${api_access_token}")
     local api_parsed_json_result=$(echo "${api_json_result}" | ${json_parser})
-    local index=$(echo "${api_parsed_json_result}" | grep -E "^data.[0-9]+.name=$2\$" | cut -d. -f2)
-    echo "${api_parsed_json_result}" | grep -E "^data.${index}.id=folder." | cut -d= -f2-
+    local index=$(echo "${api_parsed_json_result}" | grep -E "^value.[0-9]+.name=$2\$" | cut -d. -f2)
+    echo "${api_parsed_json_result}" | grep -E "^value.${index}.id=" | cut -d= -f2-
 }
 export -f findFolderId
 
+function jsonCreateFolder() {
+	# TODO Escape double quotes in $1
+	echo "{\"name\":\"$1\",\"folder\":{},\"@name.conflictBehavior\":\"rename\"}"
+}
+
 function createFolder() {
     debug "Creating folder '$2' in '$1'"
-    local api_json_result=$(curl -s "${api_base_url}/$1?access_token=${api_access_token}" --data-urlencode "name=$2")
+	local json_payload=$(jsonCreateFolder "$2")
+	local api_json_result=$(curl -s -H "Content-Type: application/json" -X POST -d "${json_payload}" "${api_base_url}/drive/items/$1/children?access_token=${api_access_token}")
     local api_parsed_json_result=$(echo "${api_json_result}" | ${json_parser})
     error=$(echo "${api_parsed_json_result}" | grep -E "^error.message" | cut -d= -f2-)
     if [ -n "${error}" ]; then
@@ -119,10 +129,10 @@ function uploadFile() {
 
     local current_file="$1"
     local current_filename=$(basename "${current_file}")
-    local current_url="${api_base_url}/${api_folder_id}/files/${current_filename}?access_token=${api_access_token}"
+    local current_url="${api_base_url}/drive/items/${api_folder_id}/children/${current_filename}/content?access_token=${api_access_token}"
     
-    local status_code=$(curl -o /dev/null -w "%{http_code}" -s -T "${current_file}" "${current_url}")
-    if (( ${status_code} == 200 || ${status_code} == 201 )); then
+    local status_code=$(curl -o /dev/null -w "%{http_code}" -s -H "X-HTTP-Method-Override: PUT" -T "${current_file}" "${current_url}")
+    if (( "${status_code}" == 200 || "${status_code}" == 201 )); then
         echo "Successfully uploaded '$1'"
     else
         error "An error has occurred while uploading '$1' (Code: ${status_code})"
