@@ -23,7 +23,13 @@ function debug() {
 export -f debug
 
 function urlencode() {
-	curl -s -o /dev/null -w %{url_effective} --get --data-urlencode "$1" "" | cut -b3-
+	curl \
+        --silent \
+        --output /dev/null \
+        --write-out "%{url_effective}" \
+        --get \
+        --data-urlencode "$1" \
+        "" | cut -b3-
 }
 export -f urlencode
 
@@ -31,7 +37,8 @@ export -f urlencode
 # --- cURL calls --- #
 # ------------------ #
 function curl_refresh_access_token() {
-	curl -s \
+	curl \
+        --silent \
 		--data-urlencode "client_id=${api_client_id}" \
 		--data-urlencode "client_secret=${api_client_secret}" \
 		--data-urlencode "refresh_token=${old_refresh_token}" \
@@ -44,12 +51,16 @@ export -f curl_refresh_access_token
 function curl_get_children() {
 	local folder_id=$(urlencode "$1")
 
-	curl -s	"${api_base_url}/drive/items/${folder_id}/children?access_token=${api_access_token}" | "${json_parser}"
+	curl \
+        --silent \
+        "${api_base_url}/drive/items/${folder_id}/children?access_token=${api_access_token}" | "${json_parser}"
 }
 export -f curl_get_children
 
 function curl_get_children_of_root() {
-	curl -s	"${api_base_url}/drive/root/children?access_token=${api_access_token}" | "${json_parser}"
+	curl \
+        --silent \
+        "${api_base_url}/drive/root/children?access_token=${api_access_token}" | "${json_parser}"
 }
 export -f curl_get_children_of_root
 
@@ -66,10 +77,11 @@ function curl_create_folder() {
 		url="${api_base_url}/drive/items/${folder_id}/children?access_token=${api_access_token}"
 	fi
 
-	curl -s \
-		-X POST \
-		-H "Content-Type: application/json" \
-		-d "${json_payload}" \
+	curl \
+        --silent \
+		--request POST \
+		--header "Content-Type: application/json" \
+		--data "${json_payload}" \
 		"${url}" | "${json_parser}"
 }
 export -f curl_create_folder
@@ -91,11 +103,12 @@ function curl_upload_file() {
        debug "Uploading ${filename} into ${folder_id}"
     fi
 
-	curl -s \
-		-o /dev/null \
-		-w "%{http_code}" \
-		-H "X-HTTP-Method-Override: PUT" \
-		-T "$2" \
+	curl \
+        --silent \
+		--output /dev/null \
+		--write-out "%{http_code}" \
+		--header "X-HTTP-Method-Override: PUT" \
+		--upload-file "$2" \
 		"${url}"
 }
 export -f curl_upload_file
