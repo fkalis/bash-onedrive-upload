@@ -79,14 +79,24 @@ export -f curl_create_folder
 function curl_upload_file() {
     local raw_filename=$(basename "$2")
 	local filename=$(urlencode "${raw_filename}")
-	local folder_id=$(urlencode "$1")
+    local url
+    
+    if [ -z "$1" ]; then
+        # No folder id, upload to root folder
+        url="${api_base_url}/drive/root/children/${filename}/content?access_token=${api_access_token}"
+        debug "Uploading ${filename} into root folder"
+    else
+	   local folder_id=$(urlencode "$1")
+       url="${api_base_url}/drive/items/${folder_id}/children/${filename}/content?access_token=${api_access_token}" 
+       debug "Uploading ${filename} into ${folder_id}"
+    fi
 
 	curl -s \
 		-o /dev/null \
 		-w "%{http_code}" \
 		-H "X-HTTP-Method-Override: PUT" \
 		-T "$2" \
-		"${api_base_url}/drive/items/${folder_id}/children/${filename}/content?access_token=${api_access_token}"
+		"${url}"
 }
 export -f curl_upload_file
 
@@ -195,6 +205,7 @@ export -f getOrCreateFolder
 # ------------------- #
 # --- FILE UPLOAD --- #
 # ------------------- #
+# $1=file
 function uploadFile() {
     if [ ! -f "$1" ]; then
         error "An error has occurred while uploading '$1' (File does not exist)"
