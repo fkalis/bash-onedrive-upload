@@ -45,11 +45,11 @@ fi
 if [ -n "${folder_name}" ]; then
 	# TODO Throw an error, if $2 contains illegal characters like double quotes
     IFS='/' read -a folder_array <<< "${folder_name}"
-    api_folder_id=$(getOrCreateFolder "${folder_array[@]}")
+    api_folder_id=$(onedrive_get_or_create_folder "${folder_array[@]}")
 	exit_on_error
 	
 	export api_folder_id
     debug "api_folder_id is now '${api_folder_id}'"
 fi
 
-printf "%s\0" "${@}" | xargs -0 --max-procs=${max_upload_threads} -i'{}' bash -c "uploadFile \"{}\""
+printf "%s\0" "${@}" | xargs -0 --max-procs=${max_upload_threads} -i'{}' bash -c "onedrive_upload_file \"{}\""

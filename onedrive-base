@@ -22,6 +22,7 @@ function debug() {
 }
 export -f debug
 
+# $1=parameter to encode
 function urlencode() {
 	curl \
         --silent \
@@ -36,18 +37,19 @@ export -f urlencode
 # ------------------ #
 # --- cURL calls --- #
 # ------------------ #
+# $1=old refresh token
 function curl_refresh_access_token() {
 	curl \
         --silent \
 		--data-urlencode "client_id=${api_client_id}" \
 		--data-urlencode "client_secret=${api_client_secret}" \
-		--data-urlencode "refresh_token=${old_refresh_token}" \
+		--data-urlencode "refresh_token=$1" \
 		--data-urlencode "grant_type=refresh_token" \
 		"${api_auth_url}" | "${json_parser}"
 }
 export -f curl_refresh_access_token
 
-# $1=folder_id
+# $1=folder id
 function curl_get_children() {
 	local folder_id=$(urlencode "$1")
 
@@ -116,16 +118,17 @@ export -f curl_upload_file
 # ------------------------ #
 # --- TOKEN MANAGEMENT --- #
 # ------------------------ #
-function loadRefreshToken() {
+function filesystem_load_refresh_token() {
     if [ ! -f "${refresh_token_file}" ]; then
         error "Refresh token not found, please complete the authorization process first"
     fi
 
     cat "${refresh_token_file}"
 }
-export -f loadRefreshToken
+export -f filesystem_load_refresh_token
 
-function saveRefreshToken() {
+# $1=new refresh token
+function filesystem_save_refresh_token() {
     if [ "$1" == "" ]; then
         error "No refresh token received from API. Please try again or re-authorize."
     fi
@@ -137,31 +140,41 @@ function saveRefreshToken() {
         rm "${refresh_token_file}.$$"
     fi
 }
-export -f saveRefreshToken
+export -f filesystem_save_refresh_token
 
-function acquireAccessToken() {
-    local old_refresh_token=$(loadRefreshToken)
+function onedrive_acquire_access_token() {
+    local old_refresh_token
+    local new_refresh_token
+    local api_parsed_json_result
+    local current_access_token
+
+    old_refresh_token=$(filesystem_load_refresh_token)
     exit_on_error
 
-    local api_parsed_json_result=$(curl_refresh_access_token)
-    local new_refresh_token=$(echo "${api_parsed_json_result}" | grep "refresh_token" | ${get_json_value})
-    saveRefreshToken "${new_refresh_token}"
+    api_parsed_json_result=$(curl_refresh_access_token "${old_refresh_token}")
+    new_refresh_token=$(echo "${api_parsed_json_result}" | grep "refresh_token" | ${get_json_value})
 
-    local current_access_token=$(echo "${api_parsed_json_result}" | grep "access_token" | ${get_json_value})
+    filesystem_save_refresh_token "${new_refresh_token}"
+    exit_on_error
+
+    current_access_token=$(echo "${api_parsed_json_result}" | grep "access_token" | ${get_json_value})
 	
     if [ "${current_access_token}" == "" ]; then
-        error "No access token received from API: ${api_parsed_json_result}"
+        error "An error has occurred while refreshing the access token: ${api_parsed_json_result}"
     fi
 
     echo "${current_access_token}"
 }
-export -f acquireAccessToken
+export -f onedrive_acquire_access_token
 
 # ------------------------ #
 # --- FOLDER TRAVERSAL --- #
 # ------------------------ #
-function findFolderId() {
+# $1=folder id
+# $2=folder name
+function onedrive_find_folder_id() {
 	local api_parsed_json_result
+
 	if [ -z "$1" ]; then
 		debug "Searching for '$2' in root"
 		api_parsed_json_result=$(curl_get_children_of_root)
@@ -178,9 +191,11 @@ function findFolderId() {
     local index=$(echo "${api_parsed_json_result}" | grep -E "^value.[0-9]+.name=$2\$" | cut -d. -f2)
     echo "${api_parsed_json_result}" | grep -E "^value.${index}.id=" | ${get_json_value}
 }
-export -f findFolderId
+export -f onedrive_find_folder_id
 
-function createFolder() {
+# $1=folder id
+# $2=folder name
+function onedrive_create_folder() {
     debug "Creating folder '$2' in '$1'"
 	local api_parsed_json_result=$(curl_create_folder "$1" "$2")
 
@@ -191,19 +206,23 @@ function createFolder() {
 
     echo "${api_parsed_json_result}" | grep -E "^id=" | ${get_json_value}
 }
-export -f createFolder
+export -f onedrive_create_folder
 
-function getOrCreateFolder() {
-    local api_access_token=$(acquireAccessToken)
+# $@=path array
+function onedrive_get_or_create_folder() {
+    local api_access_token
     local current_folder_id="${api_folder_id}"
 	local next_folder_id
     
+    api_access_token=$(onedrive_acquire_access_token)
+    exit_on_error
+    
     while [[ $# -ge 1 ]]; do
-        next_folder_id=$(findFolderId "${current_folder_id}" "$1")
+        next_folder_id=$(onedrive_find_folder_id "${current_folder_id}" "$1")
 		exit_on_error
 
         if [ -z "${next_folder_id}" ]; then
-            next_folder_id=$(createFolder "${current_folder_id}" "$1")
+            next_folder_id=$(onedrive_create_folder "${current_folder_id}" "$1")
 			exit_on_error
         fi
 
@@ -213,19 +232,20 @@ function getOrCreateFolder() {
 
     echo "${current_folder_id}"
 }
-export -f getOrCreateFolder
+export -f onedrive_get_or_create_folder
 
 # ------------------- #
 # --- FILE UPLOAD --- #
 # ------------------- #
 # $1=file
-function uploadFile() {
+function onedrive_upload_file() {
     if [ ! -f "$1" ]; then
         error "An error has occurred while uploading '$1' (File does not exist)"
     fi
     
-    local api_access_token=$(acquireAccessToken)
-
+    api_access_token=$(onedrive_acquire_access_token)
+    exit_on_error
+    
     local status_code=$(curl_upload_file "${api_folder_id}" "$1")
     if (( "${status_code}" == 200 || "${status_code}" == 201 )); then
         echo "Successfully uploaded '$1'"
@@ -233,4 +253,4 @@ function uploadFile() {
         error "An error has occurred while uploading '$1' (Code: ${status_code})"
     fi
 }
-export -f uploadFile
+export -f onedrive_upload_file
