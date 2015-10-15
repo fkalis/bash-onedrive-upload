@@ -375,7 +375,7 @@ function onedrive_upload_file_chunked() {
 
 		status_code=$(curl_upload_chunk "${upload_url}" "${current_chunk}" "$1" "${filesize}")
 
-		if [[ ! "${status_code}" == "201" ]] && [[ ! "${status_code}" == "202" ]] && [[ ! "${status_code}" == "204" ]]; then
+		if [ ! "${status_code}" == "201" ] && [ ! "${status_code}" == "202" ] && [ ! "${status_code}" == "204" ]; then
 			curl_delete_upload_session "${upload_url}"
 			error "An error has occurred while uploading '$1' (Code: ${status_code})"
 		fi
@@ -383,7 +383,10 @@ function onedrive_upload_file_chunked() {
 		current_chunk=$((${current_chunk}+1))
 	done
 
-	# The last status code has to be 201 Created
+	if [ ! "${status_code}" == "201" ]; then
+		error "An error has occured while uploading '$1' (Code: ${status_code})"
+	fi
+
 	echo "Successfully uploaded '$1'"
 }
 export -f onedrive_upload_file_chunked
