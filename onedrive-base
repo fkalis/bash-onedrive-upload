@@ -100,16 +100,16 @@ function curl_upload_file() {
 		url="${api_base_url}/drive/root/children/${filename}/content?access_token=${api_access_token}"
 		debug "Uploading ${filename} into root folder"
 	else
-	   local folder_id=$(urlencode "$1")
-	   url="${api_base_url}/drive/items/${folder_id}/children/${filename}/content?access_token=${api_access_token}"
-	   debug "Uploading ${filename} into ${folder_id}"
+		local folder_id=$(urlencode "$1")
+		url="${api_base_url}/drive/items/${folder_id}/children/${filename}/content?access_token=${api_access_token}"
+		debug "Uploading ${filename} into ${folder_id}"
 	fi
 
 	curl \
 		--silent \
+		--request PUT \
 		--output /dev/null \
 		--write-out "%{http_code}" \
-		--header "X-HTTP-Method-Override: PUT" \
 		--upload-file "$2" \
 		"${url}"
 }
@@ -121,9 +121,19 @@ function curl_request_upload_session() {
 	local raw_filename=$(basename "$2")
 	local filename=$(urlencode "${raw_filename}")
 	local json_payload="{\"item\":{\"@name.conflictBehavior\":\"rename\",\"name\":\"${raw_filename}\"}}"
-	local file
 	local folder_id=$(urlencode "$1")
-	local url="${api_base_url}/drive/items/${folder_id}:/${filename}:/upload.createSession?access_token=${api_access_token}"
+	local file
+	local url
+
+	if [ -z "$1" ]; then
+		# No folder id, upload to root folder
+		url="${api_base_url}/drive/root:/${filename}:/upload.createSession?access_token=${api_access_token}"
+		debug "Uploading ${filename} into root folder"
+	else
+		url="${api_base_url}/drive/items/${folder_id}:/${filename}:/upload.createSession?access_token=${api_access_token}"
+		debug "Uploading ${filename} into ${folder_id}"
+	fi
+
 	curl \
 		--silent \
 		--request POST \
@@ -325,7 +335,7 @@ export -f onedrive_get_or_create_folder
 # --- FILE UPLOAD --- #
 # ------------------- #
 # $1=file
-function onedrive_upload_file_() {
+function onedrive_upload_file_simple() {
 	if [ ! -f "$1" ]; then
 		error "An error has occurred while uploading '$1' (File does not exist)"
 	fi
@@ -340,10 +350,10 @@ function onedrive_upload_file_() {
 		error "An error has occurred while uploading '$1' (Code: ${status_code})"
 	fi
 }
-#export -f onedrive_upload_file
+export -f onedrive_upload_file_simple
 
 # $1=file
-function onedrive_upload_file() {
+function onedrive_upload_file_chunked() {
 	if [ ! -f "$1" ]; then
 		error "An error has occurred while uploading '$1' (File does not exist)"
 	fi
@@ -352,7 +362,8 @@ function onedrive_upload_file() {
 	exit_on_error
 
 	debug "Requesting upload session for '$1'"
-	local upload_url=$(onedrive_request_upload_session "${api_folder_id}" "$1")
+	local upload_url
+	upload_url=$(onedrive_request_upload_session "${api_folder_id}" "$1")
 	exit_on_error
 
 	local filesize=$(filesystem_get_filesize "$1")
@@ -372,6 +383,21 @@ function onedrive_upload_file() {
 		current_chunk=$((${current_chunk}+1))
 	done
 
+	# The last status code has to be 201 Created
 	echo "Successfully uploaded '$1'"
+}
+export -f onedrive_upload_file_chunked
+
+# $1=file
+function onedrive_upload_file() {
+	local filesize=$(filesystem_get_filesize "$1")
+
+	if [ ${filesize} -gt ${max_simple_upload_size} ]; then
+		debug "Size of $1 is more than ${max_simple_upload_size} bytes, will use chunked upload"
+		onedrive_upload_file_chunked "$1"
+	else
+		debug "Size of $1 is less than or equal to ${max_simple_upload_size} bytes, will use simple upload"
+		onedrive_upload_file_simple "$1"
+	fi
 }
 export -f onedrive_upload_file
