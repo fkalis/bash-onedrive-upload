@@ -80,3 +80,15 @@ Keep in mind that this will be the new root folder of your OneDrive as seen by t
 If the script does not fully utilize your bandwidth, you can maybe speed things up a little bit by increasing the value of `max_upload_threads`.
 
 When you start the upload of more than one file, the script will start up to `max_upload_threads` parallel uploads, but only one thread per file.
+
+### Configure threshold for session based upload
+
+For small files the script uses the [simple upload](https://dev.onedrive.com/items/upload_put.htm) of the api. For files that are larger than 100 MiB the script uses the [session based upload](https://dev.onedrive.com/items/upload_large_files.htm).
+
+If you want to use the session based upload for files smaller than 100 MiB you can change the value of `max_simple_upload_size` to any positive value smaller than 104857600:
+
+    export max_simple_upload_size=52428800
+
+You can also change the value of `max_chunk_size` to any positive value smaller than 62914560, if you want to use smaller or larger chunks than the default:
+
+    export max_chunk_size=62914560
