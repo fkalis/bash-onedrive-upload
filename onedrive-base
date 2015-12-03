@@ -56,6 +56,10 @@ function curl_get_children() {
 	curl \
 		--silent \
 		"${api_base_url}/drive/items/${folder_id}/children?access_token=${api_access_token}" | "${json_parser}"
+
+	if [ "${PIPESTATUS[0]}" != "0" ]; then
+		error "Could not get children of '$1'"
+	fi
 }
 export -f curl_get_children
 
@@ -63,6 +67,10 @@ function curl_get_children_of_root() {
 	curl \
 		--silent \
 		"${api_base_url}/drive/root/children?access_token=${api_access_token}" | "${json_parser}"
+
+	if [ "${PIPESTATUS[0]}" != "0" ]; then
+		error "Could not get children of root folder"
+	fi
 }
 export -f curl_get_children_of_root
 
@@ -85,6 +93,10 @@ function curl_create_folder() {
 		--header "Content-Type: application/json" \
 		--data "${json_payload}" \
 		"${url}" | "${json_parser}"
+
+	if [ "${PIPESTATUS[0]}" != "0" ]; then
+		error "Could not create folder '$2' in '$1'"
+	fi
 }
 export -f curl_create_folder
 
@@ -140,6 +152,10 @@ function curl_request_upload_session() {
 		--header "Content-Type: application/json" \
 		--data "${json_payload}" \
 		"${url}" | "${json_parser}"
+
+	if [ "${PIPESTATUS[0]}" != "0" ]; then
+		error "Could not retrieve an upload session for '${filename}' in '$1'"
+	fi
 }
 export -f curl_request_upload_session
 
@@ -254,6 +270,8 @@ function onedrive_request_upload_session() {
 	local upload_url
 
 	api_parsed_json_result=$(curl_request_upload_session "$1" "$2")
+	exit_on_error
+
 	upload_url=$(echo "${api_parsed_json_result}" | grep "uploadUrl" | ${get_json_value})
 
 	if [ "${upload_url}" == "" ]; then
@@ -275,9 +293,11 @@ function onedrive_find_folder_id() {
 	if [ -z "$1" ]; then
 		debug "Searching for '$2' in root"
 		api_parsed_json_result=$(curl_get_children_of_root)
+		exit_on_error
 	else
 		debug "Searching for '$2' in '$1'"
 		api_parsed_json_result=$(curl_get_children "$1")
+		exit_on_error
 	fi
 
 	local error_message=$(echo "${api_parsed_json_result}" | grep -E "^error.message=" | ${get_json_value})
@@ -294,7 +314,10 @@ export -f onedrive_find_folder_id
 # $2=folder name
 function onedrive_create_folder() {
 	debug "Creating folder '$2' in '$1'"
-	local api_parsed_json_result=$(curl_create_folder "$1" "$2")
+	local api_parsed_json_result
+
+	api_parsed_json_result=$(curl_create_folder "$1" "$2")
+	exit_on_error
 
 	local error_message=$(echo "${api_parsed_json_result}" | grep -E "^error.message" | ${get_json_value})
 	if [ -n "${error_message}" ]; then
