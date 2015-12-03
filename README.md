@@ -8,7 +8,11 @@ Use `git clone --recursive` to checkout the repository including all required su
 Prerequisites
 -------------
 
-This script uses `curl` for accessing the API, and `grep` and `cut` for value extraction.
+- `curl` is used for accessing the API.
+- `grep` is used for filtering the parsed json output.
+- `cut` is used for value extraction from the filtered json output.
+- `xargs` is used for multi-threaded file uploads.
+- `dd` is used for chunked file uploads.
 
 Getting started
 ---------------
