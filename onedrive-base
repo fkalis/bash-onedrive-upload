@@ -69,7 +69,7 @@ export -f curl_get_children_of_root
 # $1=parent_folder_id
 # $2=new_folder_name
 function curl_create_folder() {
-	local json_payload="{\"name\":\"$2\",\"folder\":{},\"@name.conflictBehavior\":\"rename\"}"
+	local json_payload="{\"name\":\"$2\",\"folder\":{},\"@name.conflictBehavior\":\"fail\"}"
 	local url
 
 	if [ -z "$1" ]; then
@@ -120,7 +120,7 @@ export -f curl_upload_file
 function curl_request_upload_session() {
 	local raw_filename=$(basename "$2")
 	local filename=$(urlencode "${raw_filename}")
-	local json_payload="{\"item\":{\"@name.conflictBehavior\":\"rename\",\"name\":\"${raw_filename}\"}}"
+	local json_payload="{\"item\":{\"@name.conflictBehavior\":\"replace\",\"name\":\"${raw_filename}\"}}"
 	local folder_id=$(urlencode "$1")
 	local file
 	local url
@@ -344,7 +344,7 @@ function onedrive_upload_file_simple() {
 	exit_on_error
 
 	local status_code=$(curl_upload_file "${api_folder_id}" "$1")
-	if (( "${status_code}" == 200 || "${status_code}" == 201 )); then
+	if [ "${status_code}" == "200" ] || [ "${status_code}" == "201" ]; then
 		echo "Successfully uploaded '$1'"
 	else
 		error "An error has occurred while uploading '$1' (Code: ${status_code})"
@@ -375,7 +375,9 @@ function onedrive_upload_file_chunked() {
 
 		status_code=$(curl_upload_chunk "${upload_url}" "${current_chunk}" "$1" "${filesize}")
 
-		if [ ! "${status_code}" == "201" ] && [ ! "${status_code}" == "202" ] && [ ! "${status_code}" == "204" ]; then
+		debug "Upload of chunk ${current_chunk} finished (Code: ${status_code})"
+
+		if [ ! "${status_code}" == "200" ] && [ ! "${status_code}" == "201" ] && [ ! "${status_code}" == "202" ] && [ ! "${status_code}" == "204" ]; then
 			curl_delete_upload_session "${upload_url}"
 			error "An error has occurred while uploading '$1' (Code: ${status_code})"
 		fi
@@ -383,7 +385,7 @@ function onedrive_upload_file_chunked() {
 		current_chunk=$((${current_chunk}+1))
 	done
 
-	if [ ! "${status_code}" == "201" ]; then
+	if [ ! "${status_code}" == "200" ] && [ ! "${status_code}" == "201" ]; then
 		error "An error has occured while uploading '$1' (Code: ${status_code})"
 	fi
 
