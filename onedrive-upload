@@ -15,11 +15,12 @@ while [[ $# -ge 1 ]]; do
             echo "Usage: ${script_base_name} [OPTIONS] file1 [file2...]"
             echo ""
             echo "Options:"
-            echo "  -h, --help    Show this help"
+            echo "  .d, --debug   Enable debug mode"
             echo "  -f, --folder  Upload files into this remote folder"
             echo "                Directory names are separated with a slash, e.g."
             echo "                rootFolder/subFolder"
             echo "                Do NOT use a trailing slash!"
+            echo "  -h, --help    Show this help"
             exit 0
             ;;
         -f|--folder)
@@ -47,7 +48,7 @@ if [ -n "${folder_name}" ]; then
     IFS='/' read -a folder_array <<< "${folder_name}"
     api_folder_id=$(onedrive_get_or_create_folder "${folder_array[@]}")
 	exit_on_error
-	
+
 	export api_folder_id
     debug "api_folder_id is now '${api_folder_id}'"
 fi
