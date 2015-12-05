@@ -163,7 +163,7 @@ export -f curl_request_upload_session
 # $1=upload url
 function curl_delete_upload_session() {
 	curl \
-		--verbose \
+		--silent \
 		--request DELETE \
 		--output /dev/null \
 		--write-out "%{http_code}" \
