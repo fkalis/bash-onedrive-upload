@@ -1,6 +1,7 @@
 export api_auth_url="https://login.live.com/oauth20_token.srf"
 export api_base_url="https://api.onedrive.com/v1.0"
 export get_json_value="cut -d= -f2-"
+export curl_opts="--silent"
 
 function error() {
 	echo "$1" >&2
@@ -40,8 +41,10 @@ export -f urlencode
 # ------------------ #
 # $1=old refresh token
 function curl_refresh_access_token() {
+	debug "Acquiring new access token"
+
 	curl \
-		--silent \
+		${curl_opts} \
 		--data-urlencode "client_id=${api_client_id}" \
 		--data-urlencode "client_secret=${api_client_secret}" \
 		--data-urlencode "refresh_token=$1" \
@@ -55,7 +58,7 @@ function curl_find_child_in_root_folder() {
 	local child_name=$(urlencode "$1")
 
 	curl \
-		--silent \
+		${curl_opts} \
 		"${api_base_url}/drive/root/children?access_token=${api_access_token}&select=id,name&filter=name%20eq%20'${child_name}'" | "${json_parser}"
 
 	if [ "${PIPESTATUS[0]}" != "0" ]; then
@@ -71,7 +74,7 @@ function curl_find_child_in_subfolder() {
 	local child_name=$(urlencode "$2")
 
 	curl \
-		--silent \
+		${curl_opts} \
 		"${api_base_url}/drive/items/${folder_id}/children?access_token=${api_access_token}&select=id,name&filter=name%20eq%20'${child_name}'" | "${json_parser}"
 
 	if [ "${PIPESTATUS[0]}" != "0" ]; then
@@ -94,7 +97,7 @@ function curl_create_folder() {
 	fi
 
 	curl \
-		--silent \
+		${curl_opts} \
 		--request POST \
 		--header "Content-Type: application/json" \
 		--data "${json_payload}" \
@@ -124,7 +127,7 @@ function curl_upload_file() {
 	fi
 
 	curl \
-		--silent \
+		${curl_opts} \
 		--request PUT \
 		--output /dev/null \
 		--write-out "%{http_code}" \
@@ -153,7 +156,7 @@ function curl_request_upload_session() {
 	fi
 
 	curl \
-		--silent \
+		${curl_opts} \
 		--request POST \
 		--header "Content-Type: application/json" \
 		--data "${json_payload}" \
@@ -168,7 +171,7 @@ export -f curl_request_upload_session
 # $1=upload url
 function curl_delete_upload_session() {
 	curl \
-		--silent \
+		${curl_opts} \
 		--request DELETE \
 		--output /dev/null \
 		--write-out "%{http_code}" \
@@ -197,7 +200,7 @@ function curl_upload_chunk() {
 	debug "Content-Range: bytes ${current_range_start}-${current_range_end}/${filesize}"
 
 	dd if="$3" count=1 skip=$2 bs=${max_chunk_size} 2>/dev/null | curl \
-		--silent \
+		${curl_opts} \
 		--request PUT \
 		--output /dev/null \
 		--write-out "%{http_code}" \
