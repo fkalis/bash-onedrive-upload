@@ -207,7 +207,7 @@ function curl_upload_chunk() {
 		--header "Content-Length: ${current_range_length}" \
 		--header "Content-Range: bytes ${current_range_start}-${current_range_end}/${filesize}" \
 		--data-binary @- \
-		"${1}"
+		"${1}?access_token=${api_access_token}"
 }
 export -f curl_upload_chunk
 
@@ -282,6 +282,8 @@ function onedrive_request_upload_session() {
 	exit_on_error
 
 	upload_url=$(echo "${api_parsed_json_result}" | grep "uploadUrl" | ${get_json_value})
+	# Remove access_token from upload_url
+	upload_url=$(echo "${upload_url/?access_token=*/}")
 
 	if [ "${upload_url}" == "" ]; then
 		error "An error has occurred while requesting an upload session: ${api_parsed_json_result}"
@@ -403,6 +405,10 @@ function onedrive_upload_file_chunked() {
 	local status_code
 
 	while [ $((${current_chunk}*${max_chunk_size})) -lt ${filesize} ]; do
+		# Acquire a token for each chunk to ensure that it has not yet expired. This WILL slow things down a little bit.
+		api_access_token=$(onedrive_acquire_access_token)
+		exit_on_error
+
 		debug "Uploading chunk ${current_chunk} of '$1'"
 
 		status_code=$(curl_upload_chunk "${upload_url}" "${current_chunk}" "$1" "${filesize}")
