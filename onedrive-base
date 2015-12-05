@@ -395,14 +395,14 @@ function onedrive_upload_file_chunked() {
 	local status_code
 
 	while [ $((${current_chunk}*${max_chunk_size})) -lt ${filesize} ]; do
-		debug "Uploading chunk ${current_chunk}"
+		debug "Uploading chunk ${current_chunk} of '$1'"
 
 		status_code=$(curl_upload_chunk "${upload_url}" "${current_chunk}" "$1" "${filesize}")
 
-		debug "Upload of chunk ${current_chunk} finished (Code: ${status_code})"
+		debug "Upload of chunk ${current_chunk} of '$1' finished (Code: ${status_code})"
 
 		if [ ! "${status_code}" == "200" ] && [ ! "${status_code}" == "201" ] && [ ! "${status_code}" == "202" ] && [ ! "${status_code}" == "204" ]; then
-			curl_delete_upload_session "${upload_url}"
+			curl_delete_upload_session "${upload_url}" > /dev/null
 			error "An error has occurred while uploading '$1' (Code: ${status_code})"
 		fi
 
