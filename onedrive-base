@@ -50,30 +50,35 @@ function curl_refresh_access_token() {
 }
 export -f curl_refresh_access_token
 
-# $1=folder id
-function curl_get_children() {
-	local folder_id=$(urlencode "$1")
+# $1=child name
+function curl_find_child_in_root_folder() {
+	local child_name=$(urlencode "$1")
 
 	curl \
 		--silent \
-		"${api_base_url}/drive/items/${folder_id}/children?access_token=${api_access_token}&select=id,name" | "${json_parser}"
-
-	if [ "${PIPESTATUS[0]}" != "0" ]; then
-		error "Could not get children of '$1'"
-	fi
-}
-export -f curl_get_children
-
-function curl_get_children_of_root() {
-	curl \
-		--silent \
-		"${api_base_url}/drive/root/children?access_token=${api_access_token}&select=id,name" | "${json_parser}"
+		"${api_base_url}/drive/root/children?access_token=${api_access_token}&select=id,name&filter=name%20eq%20'${child_name}'" | "${json_parser}"
 
 	if [ "${PIPESTATUS[0]}" != "0" ]; then
 		error "Could not get children of root folder"
 	fi
 }
-export -f curl_get_children_of_root
+export -f curl_find_child_in_root_folder
+
+# $1=folder id
+# $2=child name
+function curl_find_child_in_subfolder() {
+	local folder_id=$(urlencode "$1")
+	local child_name=$(urlencode "$2")
+
+	curl \
+		--silent \
+		"${api_base_url}/drive/items/${folder_id}/children?access_token=${api_access_token}&select=id,name&filter=name%20eq%20'${child_name}'" | "${json_parser}"
+
+	if [ "${PIPESTATUS[0]}" != "0" ]; then
+		error "Could not get children of folder '${folder_id}'"
+	fi
+}
+export -f curl_find_child_in_subfolder
 
 # $1=parent_folder_id
 # $2=new_folder_name
@@ -293,11 +298,11 @@ function onedrive_find_folder_id() {
 
 	if [ -z "$1" ]; then
 		debug "Searching for '$2' in root"
-		api_parsed_json_result=$(curl_get_children_of_root)
+		api_parsed_json_result=$(curl_find_child_in_root_folder "$2")
 		exit_on_error
 	else
 		debug "Searching for '$2' in '$1'"
-		api_parsed_json_result=$(curl_get_children "$1")
+		api_parsed_json_result=$(curl_find_child_in_subfolder "$1" "$2")
 		exit_on_error
 	fi
 
