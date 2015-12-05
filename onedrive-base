@@ -17,7 +17,8 @@ export -f exit_on_error
 
 function debug() {
 	if [ "${debug_mode}" == "1" ]; then
-		echo "$1" >&2
+		local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+		echo "${timestamp} $1" >&2
 	fi
 }
 export -f debug
