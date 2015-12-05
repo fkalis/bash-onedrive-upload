@@ -56,7 +56,7 @@ function curl_get_children() {
 
 	curl \
 		--silent \
-		"${api_base_url}/drive/items/${folder_id}/children?access_token=${api_access_token}" | "${json_parser}"
+		"${api_base_url}/drive/items/${folder_id}/children?access_token=${api_access_token}&select=id,name" | "${json_parser}"
 
 	if [ "${PIPESTATUS[0]}" != "0" ]; then
 		error "Could not get children of '$1'"
@@ -67,7 +67,7 @@ export -f curl_get_children
 function curl_get_children_of_root() {
 	curl \
 		--silent \
-		"${api_base_url}/drive/root/children?access_token=${api_access_token}" | "${json_parser}"
+		"${api_base_url}/drive/root/children?access_token=${api_access_token}&select=id,name" | "${json_parser}"
 
 	if [ "${PIPESTATUS[0]}" != "0" ]; then
 		error "Could not get children of root folder"
