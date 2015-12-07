@@ -109,11 +109,11 @@ function curl_upload_file() {
 	if [ -z "$1" ]; then
 		# No folder id, upload to root folder
 		url="${api_base_url}/drive/root/children/${url_filename}/content?access_token=${api_access_token}"
-		debug "Uploading ${filename} into root folder"
+		debug "Uploading '${file}' as '${remote_filename}' into root folder"
 	else
 		local folder_id=$(urlencode "$1")
 		url="${api_base_url}/drive/items/${folder_id}/children/${url_filename}/content?access_token=${api_access_token}"
-		debug "Uploading ${filename} into ${folder_id}"
+		debug "Uploading '${file}' as '${remote_filename}' into ${folder_id}"
 	fi
 
 	curl \
