@@ -48,7 +48,7 @@ You can also upload multiple files, either by explicitly specifying each one
 
     $ ./onedrive-upload file1 file2
 
-or just use wildcards
+or just use wildcards (globbing)
 
     $ ./onedrive-upload file*.png
 
@@ -57,6 +57,12 @@ You can also specify a destination folder relative to the root folder configured
     $ ./onedrive-upload -f "relative/path" file1
 
 This command will automatically determine all of the needed folder ids and recursively create all subfolders that do not yet exist.
+
+If you need your file to be uploaded with a different filename, you can activate the renaming mode:
+
+    $ ./onedrive-upload -r ./file1.txt renamed_file1.txt ./file2.txt renamed_file2.txt
+
+Be aware that for each file you specify you must provide the remote filename as the subsequent parameter. This feature can lead to an unexpected behavior when combined with wildcards (globbing) because the pathname expansion is performed by bash before the execution of the script.
 
 Configuration
 -------------
