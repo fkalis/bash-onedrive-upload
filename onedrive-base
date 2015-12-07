@@ -1,20 +1,18 @@
-export api_auth_url="https://login.live.com/oauth20_token.srf"
-export api_base_url="https://api.onedrive.com/v1.0"
-export get_json_value="cut -d= -f2-"
-export curl_opts="--silent"
+api_auth_url="https://login.live.com/oauth20_token.srf"
+api_base_url="https://api.onedrive.com/v1.0"
+get_json_value="cut -d= -f2-"
+curl_opts="--silent"
 
 function error() {
 	echo "$1" >&2
 	exit 1
 }
-export -f error
 
 function exit_on_error() {
 	if (( $? > 0 )); then
 		exit 1
 	fi
 }
-export -f exit_on_error
 
 function debug() {
 	if [ "${debug_mode}" == "1" ]; then
@@ -22,7 +20,6 @@ function debug() {
 		echo "${timestamp} $1" >&2
 	fi
 }
-export -f debug
 
 # $1=parameter to encode
 function urlencode() {
@@ -34,7 +31,6 @@ function urlencode() {
 		--data-urlencode "$1" \
 		"" | cut -b3-
 }
-export -f urlencode
 
 # ------------------ #
 # --- cURL calls --- #
@@ -51,7 +47,6 @@ function curl_refresh_access_token() {
 		--data-urlencode "grant_type=refresh_token" \
 		"${api_auth_url}" | "${json_parser}"
 }
-export -f curl_refresh_access_token
 
 # $1=child name
 function curl_find_child_in_root_folder() {
@@ -65,7 +60,6 @@ function curl_find_child_in_root_folder() {
 		error "Could not get children of root folder"
 	fi
 }
-export -f curl_find_child_in_root_folder
 
 # $1=folder id
 # $2=child name
@@ -81,7 +75,6 @@ function curl_find_child_in_subfolder() {
 		error "Could not get children of folder '${folder_id}'"
 	fi
 }
-export -f curl_find_child_in_subfolder
 
 # $1=parent_folder_id
 # $2=new_folder_name
@@ -107,22 +100,19 @@ function curl_create_folder() {
 		error "Could not create folder '$2' in '$1'"
 	fi
 }
-export -f curl_create_folder
 
 # $1=folder_id
-# $2=file
 function curl_upload_file() {
-	local raw_filename=$(basename "$2")
-	local filename=$(urlencode "${raw_filename}")
+	local url_filename=$(urlencode "${remote_filename}")
 	local url
 
 	if [ -z "$1" ]; then
 		# No folder id, upload to root folder
-		url="${api_base_url}/drive/root/children/${filename}/content?access_token=${api_access_token}"
+		url="${api_base_url}/drive/root/children/${url_filename}/content?access_token=${api_access_token}"
 		debug "Uploading ${filename} into root folder"
 	else
 		local folder_id=$(urlencode "$1")
-		url="${api_base_url}/drive/items/${folder_id}/children/${filename}/content?access_token=${api_access_token}"
+		url="${api_base_url}/drive/items/${folder_id}/children/${url_filename}/content?access_token=${api_access_token}"
 		debug "Uploading ${filename} into ${folder_id}"
 	fi
 
@@ -131,28 +121,24 @@ function curl_upload_file() {
 		--request PUT \
 		--output /dev/null \
 		--write-out "%{http_code}" \
-		--upload-file "$2" \
+		--upload-file "${file}" \
 		"${url}"
 }
-export -f curl_upload_file
 
 # $1=folder_id
-# $2=file
 function curl_request_upload_session() {
-	local raw_filename=$(basename "$2")
-	local filename=$(urlencode "${raw_filename}")
-	local json_payload="{\"item\":{\"@name.conflictBehavior\":\"replace\",\"name\":\"${raw_filename}\"}}"
+	local url_filename=$(urlencode "${remote_filename}")
+	local json_payload="{\"item\":{\"@name.conflictBehavior\":\"replace\",\"name\":\"${remote_filename}\"}}"
 	local folder_id=$(urlencode "$1")
-	local file
 	local url
 
 	if [ -z "$1" ]; then
 		# No folder id, upload to root folder
-		url="${api_base_url}/drive/root:/${filename}:/upload.createSession?access_token=${api_access_token}"
-		debug "Uploading ${filename} into root folder"
+		url="${api_base_url}/drive/root:/${url_filename}:/upload.createSession?access_token=${api_access_token}"
+		debug "Uploading '${file}' as '${remote_filename}' into root folder"
 	else
-		url="${api_base_url}/drive/items/${folder_id}:/${filename}:/upload.createSession?access_token=${api_access_token}"
-		debug "Uploading ${filename} into ${folder_id}"
+		url="${api_base_url}/drive/items/${folder_id}:/${url_filename}:/upload.createSession?access_token=${api_access_token}"
+		debug "Uploading '${file}' as '${remote_filename}' into ${folder_id}"
 	fi
 
 	curl \
@@ -166,7 +152,6 @@ function curl_request_upload_session() {
 		error "Could not retrieve an upload session for '${filename}' in '$1'"
 	fi
 }
-export -f curl_request_upload_session
 
 # $1=upload url
 function curl_delete_upload_session() {
@@ -177,12 +162,9 @@ function curl_delete_upload_session() {
 		--write-out "%{http_code}" \
 		"${1}"
 }
-export -f curl_delete_upload_session
 
 # $1=upload url
 # $2=current chunk
-# $3=file
-# $4=filesize
 function curl_upload_chunk() {
 	local current_range_start
 	local current_range_end
@@ -199,7 +181,7 @@ function curl_upload_chunk() {
 	debug "Content-Length: ${current_range_length}"
 	debug "Content-Range: bytes ${current_range_start}-${current_range_end}/${filesize}"
 
-	dd if="$3" count=1 skip=$2 bs=${max_chunk_size} 2>/dev/null | curl \
+	dd if="${file}" count=1 skip=$2 bs=${max_chunk_size} 2>/dev/null | curl \
 		${curl_opts} \
 		--request PUT \
 		--output /dev/null \
@@ -209,7 +191,6 @@ function curl_upload_chunk() {
 		--data-binary @- \
 		"${1}?access_token=${api_access_token}"
 }
-export -f curl_upload_chunk
 
 # ------------------------ #
 # --- TOKEN MANAGEMENT --- #
@@ -221,7 +202,6 @@ function filesystem_load_refresh_token() {
 
 	cat "${refresh_token_file}"
 }
-export -f filesystem_load_refresh_token
 
 # $1=new refresh token
 function filesystem_save_refresh_token() {
@@ -236,7 +216,6 @@ function filesystem_save_refresh_token() {
 		rm "${refresh_token_file}.$$"
 	fi
 }
-export -f filesystem_save_refresh_token
 
 function onedrive_acquire_access_token() {
 	local old_refresh_token
@@ -261,7 +240,6 @@ function onedrive_acquire_access_token() {
 
 	echo "${current_access_token}"
 }
-export -f onedrive_acquire_access_token
 
 # --------------------------------- #
 # --- UPLOAD SESSION MANAGEMENT --- #
@@ -270,15 +248,13 @@ export -f onedrive_acquire_access_token
 function filesystem_get_filesize() {
 	du -b "$1" | cut -f1
 }
-export -f filesystem_get_filesize
 
 # $1=folder id
-# $2=file
 function onedrive_request_upload_session() {
 	local api_parsed_json_result
 	local upload_url
 
-	api_parsed_json_result=$(curl_request_upload_session "$1" "$2")
+	api_parsed_json_result=$(curl_request_upload_session "$1")
 	exit_on_error
 
 	upload_url=$(echo "${api_parsed_json_result}" | grep "uploadUrl" | ${get_json_value})
@@ -291,7 +267,6 @@ function onedrive_request_upload_session() {
 
 	echo "${upload_url}"
 }
-export -f onedrive_request_upload_session
 
 # ------------------------ #
 # --- FOLDER TRAVERSAL --- #
@@ -319,7 +294,6 @@ function onedrive_find_folder_id() {
 	local index=$(echo "${api_parsed_json_result}" | grep -E "^value.[0-9]+.name=$2\$" | cut -d. -f2)
 	echo "${api_parsed_json_result}" | grep -E "^value.${index}.id=" | ${get_json_value}
 }
-export -f onedrive_find_folder_id
 
 # $1=folder id
 # $2=folder name
@@ -337,7 +311,6 @@ function onedrive_create_folder() {
 
 	echo "${api_parsed_json_result}" | grep -E "^id=" | ${get_json_value}
 }
-export -f onedrive_create_folder
 
 # $@=path array
 function onedrive_get_or_create_folder() {
@@ -363,44 +336,35 @@ function onedrive_get_or_create_folder() {
 
 	echo "${current_folder_id}"
 }
-export -f onedrive_get_or_create_folder
 
 # ------------------- #
 # --- FILE UPLOAD --- #
 # ------------------- #
-# $1=file
 function onedrive_upload_file_simple() {
-	if [ ! -f "$1" ]; then
-		error "An error has occurred while uploading '$1' (File does not exist)"
+	if [ ! -f "${file}" ]; then
+		error "An error has occurred while uploading '${file}' (File does not exist)"
 	fi
 
 	api_access_token=$(onedrive_acquire_access_token)
 	exit_on_error
 
-	local status_code=$(curl_upload_file "${api_folder_id}" "$1")
+	local status_code=$(curl_upload_file "${api_folder_id}")
 	if [ "${status_code}" == "200" ] || [ "${status_code}" == "201" ]; then
-		echo "Successfully uploaded '$1'"
+		echo "Successfully uploaded '${file}' as '${remote_filename}'"
 	else
-		error "An error has occurred while uploading '$1' (Code: ${status_code})"
+		error "An error has occurred while uploading '${file}' (Code: ${status_code})"
 	fi
 }
-export -f onedrive_upload_file_simple
 
-# $1=file
 function onedrive_upload_file_chunked() {
-	if [ ! -f "$1" ]; then
-		error "An error has occurred while uploading '$1' (File does not exist)"
-	fi
-
 	api_access_token=$(onedrive_acquire_access_token)
 	exit_on_error
 
-	debug "Requesting upload session for '$1'"
+	debug "Requesting upload session for '${file}'"
 	local upload_url
-	upload_url=$(onedrive_request_upload_session "${api_folder_id}" "$1")
+	upload_url=$(onedrive_request_upload_session "${api_folder_id}")
 	exit_on_error
 
-	local filesize=$(filesystem_get_filesize "$1")
 	local current_chunk=0
 	local status_code
 
@@ -409,38 +373,42 @@ function onedrive_upload_file_chunked() {
 		api_access_token=$(onedrive_acquire_access_token)
 		exit_on_error
 
-		debug "Uploading chunk ${current_chunk} of '$1'"
+		debug "Uploading chunk ${current_chunk} of '${file}'"
 
-		status_code=$(curl_upload_chunk "${upload_url}" "${current_chunk}" "$1" "${filesize}")
+		status_code=$(curl_upload_chunk "${upload_url}" "${current_chunk}")
 
-		debug "Upload of chunk ${current_chunk} of '$1' finished (Code: ${status_code})"
+		debug "Upload of chunk ${current_chunk} of '${file}' finished (Code: ${status_code})"
 
 		if [ ! "${status_code}" == "200" ] && [ ! "${status_code}" == "201" ] && [ ! "${status_code}" == "202" ] && [ ! "${status_code}" == "204" ]; then
 			curl_delete_upload_session "${upload_url}" > /dev/null
-			error "An error has occurred while uploading '$1' (Code: ${status_code})"
+			error "An error has occurred while uploading '${file}' (Code: ${status_code})"
 		fi
 
 		current_chunk=$((${current_chunk}+1))
 	done
 
 	if [ ! "${status_code}" == "200" ] && [ ! "${status_code}" == "201" ]; then
-		error "An error has occured while uploading '$1' (Code: ${status_code})"
+		error "An error has occured while uploading '${file}' (Code: ${status_code})"
 	fi
 
-	echo "Successfully uploaded '$1'"
+	echo "Successfully uploaded '${file}' as '${remote_filename}'"
 }
-export -f onedrive_upload_file_chunked
 
-# $1=file
 function onedrive_upload_file() {
-	local filesize=$(filesystem_get_filesize "$1")
+	if [ ! -f "$1" ]; then
+		error "An error has occurred while uploading '$1' (File does not exist)"
+	fi
+
+	file="$1"
+	filename=$(basename "${file}")
+	filesize=$(filesystem_get_filesize "${file}")
+	remote_filename=${2:-${filename}}
 
 	if [ ${filesize} -gt ${max_simple_upload_size} ]; then
-		debug "Size of $1 is more than ${max_simple_upload_size} bytes, will use chunked upload"
-		onedrive_upload_file_chunked "$1"
+		debug "Size of ${filename} is more than ${max_simple_upload_size} bytes, will use chunked upload"
+		onedrive_upload_file_chunked
 	else
-		debug "Size of $1 is less than or equal to ${max_simple_upload_size} bytes, will use simple upload"
-		onedrive_upload_file_simple "$1"
+		debug "Size of ${filename} is less than or equal to ${max_simple_upload_size} bytes, will use simple upload"
+		onedrive_upload_file_simple
 	fi
 }
-export -f onedrive_upload_file
