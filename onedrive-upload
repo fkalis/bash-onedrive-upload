@@ -70,8 +70,8 @@ function start_upload() {
 export -f start_upload
 
 if [ "${rename_mode}" == "0" ]; then
-    printf "%s\0" "${@}" | xargs -0 -n1 --max-procs=${max_upload_threads} bash -c 'start_upload "$1"' bash
+    printf "%s\0" "${@}" | xargs -0 -n1 -P${max_upload_threads} bash -c 'start_upload "$1"' bash
 else
-    printf "%s\0" "${@}" | xargs -0 -n2 --max-procs=${max_upload_threads} bash -c 'start_upload "$1" "$2"' bash
+    printf "%s\0" "${@}" | xargs -0 -n2 -P${max_upload_threads} bash -c 'start_upload "$1" "$2"' bash
 fi
 
