@@ -13,6 +13,8 @@ Prerequisites
 - `cut` is used for value extraction from the filtered json output.
 - `xargs` is used for multi-threaded file uploads.
 - `dd` is used for chunked file uploads.
+- `du` is used to determine the filesize
+  - `stat` is used to determine the filesize on OSX
 
 Getting started
 ---------------
