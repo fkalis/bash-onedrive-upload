@@ -245,8 +245,12 @@ function onedrive_acquire_access_token() {
 # --- UPLOAD SESSION MANAGEMENT --- #
 # --------------------------------- #
 # $1=file
-function filesystem_get_filesize() {
-	du -b "$1" | cut -f1
+function filesystem_get_filesize() {	
+	if [[ $(uname) == "Darwin" ]]; then
+  		stat -f%z "$1"
+	else
+   		du -b "$1" | cut -f1
+	fi	
 }
 
 # $1=folder id
