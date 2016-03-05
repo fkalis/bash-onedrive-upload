@@ -96,6 +96,18 @@ which identifies the root folder of your account.
 
 Keep in mind that this will be the new root folder of your OneDrive as seen by this script. The script does *not* support escaping the root by using `../`.
 
+### Less permissions for uploads
+
+If you don't want the script to have access to all your folders and files you can request less permissions during the authorization process. Simply change the value
+
+    export api_permissions="onedrive.readwrite"
+
+to
+
+    export api_permissions="onedrive.approot"
+
+and run the authorization process. You might need to remove the apps permissions prior to that ([Link](https://account.live.com/consent/Manage)) if you have already requested `onedrive.readwrite` permissions.
+
 ### Number of simultaneous uploads
 
 If the script does not fully utilize your bandwidth, you can maybe speed things up a little bit by increasing the value of `max_upload_threads`.

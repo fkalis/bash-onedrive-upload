@@ -5,7 +5,7 @@ source "${script_base_folder}/onedrive-base"
 export json_parser="${script_base_folder}/libs/json/bash-json-parser"
 
 echo "Please open the following URL in your browser and follow the steps until you see a blank page:"
-echo "https://login.live.com/oauth20_authorize.srf?client_id=${api_client_id}&scope=wl.skydrive%20wl.skydrive_update%20wl.offline_access&response_type=code&redirect_uri=https://login.live.com/oauth20_desktop.srf"
+echo "https://login.live.com/oauth20_authorize.srf?client_id=${api_client_id}&scope=wl.offline_access%20${api_permissions}&response_type=code&redirect_uri=https://login.live.com/oauth20_desktop.srf"
 echo ""
 echo "When ready, please enter the value of the code parameter (from the URL of the blank page) and press return"
 read code
