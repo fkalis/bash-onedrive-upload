@@ -54,10 +54,10 @@ function curl_find_child_in_root_folder() {
 
 	curl \
 		${curl_opts} \
-		"${api_base_url}/drive/root/children?access_token=${api_access_token}&select=id,name&filter=name%20eq%20'${child_name}'" | "${json_parser}"
+		"${api_base_url}/drive/${api_root_folder}/children?access_token=${api_access_token}&select=id,name&filter=name%20eq%20'${child_name}'" | "${json_parser}"
 
 	if [ "${PIPESTATUS[0]}" != "0" ]; then
-		error "Could not get children of root folder"
+		error "Could not get children of root folder (${api_root_folder})"
 	fi
 }
 
@@ -83,7 +83,7 @@ function curl_create_folder() {
 	local url
 
 	if [ -z "$1" ]; then
-		url="${api_base_url}/drive/root/children?access_token=${api_access_token}"
+		url="${api_base_url}/drive/${api_root_folder}/children?access_token=${api_access_token}"
 	else
 		local folder_id=$(urlencode "$1")
 		url="${api_base_url}/drive/items/${folder_id}/children?access_token=${api_access_token}"
@@ -108,8 +108,8 @@ function curl_upload_file() {
 
 	if [ -z "$1" ]; then
 		# No folder id, upload to root folder
-		url="${api_base_url}/drive/root/children/${url_filename}/content?access_token=${api_access_token}"
-		debug "Uploading '${file}' as '${remote_filename}' into root folder"
+		url="${api_base_url}/drive/${api_root_folder}/children/${url_filename}/content?access_token=${api_access_token}"
+		debug "Uploading '${file}' as '${remote_filename}' into root folder (${api_root_folder})"
 	else
 		local folder_id=$(urlencode "$1")
 		url="${api_base_url}/drive/items/${folder_id}/children/${url_filename}/content?access_token=${api_access_token}"
@@ -134,8 +134,8 @@ function curl_request_upload_session() {
 
 	if [ -z "$1" ]; then
 		# No folder id, upload to root folder
-		url="${api_base_url}/drive/root:/${url_filename}:/upload.createSession?access_token=${api_access_token}"
-		debug "Uploading '${file}' as '${remote_filename}' into root folder"
+		url="${api_base_url}/drive/${api_root_folder}:/${url_filename}:/upload.createSession?access_token=${api_access_token}"
+		debug "Uploading '${file}' as '${remote_filename}' into root folder (${api_root_folder})"
 	else
 		url="${api_base_url}/drive/items/${folder_id}:/${url_filename}:/upload.createSession?access_token=${api_access_token}"
 		debug "Uploading '${file}' as '${remote_filename}' into ${folder_id}"
@@ -281,7 +281,7 @@ function onedrive_find_folder_id() {
 	local api_parsed_json_result
 
 	if [ -z "$1" ]; then
-		debug "Searching for '$2' in root"
+		debug "Searching for '$2' in root (${api_root_folder})"
 		api_parsed_json_result=$(curl_find_child_in_root_folder "$2")
 		exit_on_error
 	else
