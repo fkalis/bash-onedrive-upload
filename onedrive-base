@@ -1,7 +1,7 @@
 api_auth_url="https://login.live.com/oauth20_token.srf"
 api_base_url="https://api.onedrive.com/v1.0"
 get_json_value="cut -d= -f2-"
-curl_opts="--silent"
+curl_opts="--silent --retry 2 --retry-delay 10"
 
 function error() {
 	echo "$1" >&2
@@ -245,12 +245,12 @@ function onedrive_acquire_access_token() {
 # --- UPLOAD SESSION MANAGEMENT --- #
 # --------------------------------- #
 # $1=file
-function filesystem_get_filesize() {	
+function filesystem_get_filesize() {
 	if [[ $(uname) == "Darwin" ]]; then
   		stat -f%z "$1"
 	else
    		du -b "$1" | cut -f1
-	fi	
+	fi
 }
 
 # $1=folder id
