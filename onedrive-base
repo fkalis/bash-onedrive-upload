@@ -161,7 +161,7 @@ function curl_upload_chunk() {
 	local current_range_end
 	local current_range_length
 
-	current_range_start=$((${current_chunk}*${max_chunk_size}))
+	current_range_start=$(($2*${max_chunk_size}))
 	current_range_end=$((${current_range_start}+${max_chunk_size}-1))
 
 	if [ ${current_range_end} -gt ${filesize} ]; then
