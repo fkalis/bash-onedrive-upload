@@ -1,7 +1,7 @@
 api_auth_url="https://login.live.com/oauth20_token.srf"
 api_base_url="https://api.onedrive.com/v1.0"
 get_json_value="cut -d= -f2-"
-curl_opts="--silent --retry 2 --retry-delay 10"
+curl_opts="--silent --retry ${http_retries} --retry-delay 10"
 
 function error() {
 	echo "$1" >&2
@@ -328,12 +328,7 @@ function onedrive_upload_file_simple() {
 	api_access_token=$(onedrive_acquire_access_token)
 	exit_on_error
 
-	local status_code=$(curl_upload_file "${api_folder_id}")
-	if [ "${status_code}" == "200" ] || [ "${status_code}" == "201" ]; then
-		echo "Successfully uploaded '${file}' as '${remote_filename}'"
-	else
-		error "An error has occurred while uploading '${file}' (Code: ${status_code})"
-	fi
+	curl_upload_file "${api_folder_id}"
 }
 
 function onedrive_upload_file_chunked() {
@@ -346,7 +341,7 @@ function onedrive_upload_file_chunked() {
 	exit_on_error
 
 	local current_chunk=0
-	local status_code
+	local status_code=""
 
 	while [ $((${current_chunk}*${max_chunk_size})) -lt ${filesize} ]; do
 		# Acquire a token for each chunk to ensure that it has not yet expired. This WILL slow things down a little bit.
@@ -355,23 +350,39 @@ function onedrive_upload_file_chunked() {
 
 		debug "Uploading chunk ${current_chunk} of '${file}'"
 
-		status_code=$(curl_upload_chunk "${upload_url}" "${current_chunk}")
+		local retry_count=0
+		status_code=""
+
+		while [ ${retry_count} -lt ${chunk_retries} ] && \
+				[ ! "${status_code}" == "200" ] && \
+				[ ! "${status_code}" == "201" ] && \
+				[ ! "${status_code}" == "202" ] && \
+				[ ! "${status_code}" == "204" ]; do
+			if [ ${retry_count} -gt 0 ]; then
+				debug "Retrying upload of chunk ${current_chunk} of '${file}' (Previous code: ${status_code})"
+			fi
+
+			status_code=$(curl_upload_chunk "${upload_url}" "${current_chunk}")
+
+			retry_count=$((retry_count+1))
+		done
 
 		debug "Upload of chunk ${current_chunk} of '${file}' finished (Code: ${status_code})"
 
-		if [ ! "${status_code}" == "200" ] && [ ! "${status_code}" == "201" ] && [ ! "${status_code}" == "202" ] && [ ! "${status_code}" == "204" ]; then
+		if [ ! "${status_code}" == "200" ] && \
+				[ ! "${status_code}" == "201" ] && \
+				[ ! "${status_code}" == "202" ] && \
+				[ ! "${status_code}" == "204" ]; then
 			curl_delete_upload_session "${upload_url}" > /dev/null
-			error "An error has occurred while uploading '${file}' (Code: ${status_code})"
+			echo "${status_code}"
+
+			return;
 		fi
 
 		current_chunk=$((${current_chunk}+1))
 	done
 
-	if [ ! "${status_code}" == "200" ] && [ ! "${status_code}" == "201" ]; then
-		error "An error has occured while uploading '${file}' (Code: ${status_code})"
-	fi
-
-	echo "Successfully uploaded '${file}' as '${remote_filename}'"
+	echo "${status_code}"
 }
 
 function onedrive_upload_file() {
@@ -384,11 +395,30 @@ function onedrive_upload_file() {
 	filesize=$(filesystem_get_filesize "${file}")
 	remote_filename=${2:-${filename}}
 
-	if [ ${filesize} -gt ${max_simple_upload_size} ]; then
-		debug "Size of ${filename} is more than ${max_simple_upload_size} bytes, will use chunked upload"
-		onedrive_upload_file_chunked
+	local retry_count=0
+	local status_code=""
+
+	while [ ${retry_count} -lt ${file_retries} ] && \
+			[ ! "${status_code}" == "200" ] && \
+			[ ! "${status_code}" == "201" ]; do
+		if [ ${retry_count} -gt 0 ]; then
+			debug "Retrying full upload of '${file}' (Previous code: ${status_code})"
+		fi
+
+		if [ ${filesize} -gt ${max_simple_upload_size} ]; then
+			debug "Size of ${filename} is more than ${max_simple_upload_size} bytes, will use chunked upload"
+			status_code=$(onedrive_upload_file_chunked)
+		else
+			debug "Size of ${filename} is less than or equal to ${max_simple_upload_size} bytes, will use simple upload"
+			status_code=$(onedrive_upload_file_simple)
+		fi
+
+		retry_count=$((retry_count+1))
+	done
+
+	if [ "${status_code}" == "200" ] || [ "${status_code}" == "201" ]; then
+		echo "Successfully uploaded '${file}' as '${remote_filename}'"
 	else
-		debug "Size of ${filename} is less than or equal to ${max_simple_upload_size} bytes, will use simple upload"
-		onedrive_upload_file_simple
+		error "An error has occurred while uploading '${file}' (Code: ${status_code})"
 	fi
 }
