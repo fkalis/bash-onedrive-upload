@@ -19,7 +19,7 @@ Prerequisites
 Getting started
 ---------------
 
-Before you can use this tool, create an application in the [Microsoft account Developer Center](https://account.live.com/developers/applications) to generate your custom Client ID and Client secret. Notice, that you need to add a new platform of type `Mobile application`.
+Before you can use this tool, create an application in the [Microsoft account Developer Center](https://apps.dev.microsoft.com/?mkt=de-de#/appList/create/sapi) to generate your custom Client ID and Client secret. Notice, that you need to add a new platform of type `Mobile application`.
 
 Afterwards your overview should show your freshly created credentials in the form
 
