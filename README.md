@@ -26,6 +26,8 @@ Afterwards your overview should show your freshly created credentials in the for
     Application ID: 00000000A2B3C495
     Applications secrets: qOFCYaZKjm6e13aq3fdGiNz
 
+Please ensure that your application is listed below `Live SDK applications` and that the Application ID (Client ID) does not contain any dashes. The newer applications are not (yet) supported by the `onedrive-authorize`.
+
 Please insert these values in the matching variables in `onedrive.cfg`:
 
     export api_client_id="00000000A2B3C495"
