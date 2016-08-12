@@ -19,12 +19,12 @@ Prerequisites
 Getting started
 ---------------
 
-Before you can use this tool, create an application in the [Microsoft account Developer Center](https://account.live.com/developers/applications) to generate your custom Client ID and Client secret. Notice, that you need to switch the API Setting "Mobile or desktop client app" to "yes".
+Before you can use this tool, create an application in the [Microsoft account Developer Center](https://account.live.com/developers/applications) to generate your custom Client ID and Client secret. Notice, that you need to add a new platform of type `Mobile application`.
 
 Afterwards your overview should show your freshly created credentials in the form
 
-    Client ID: 00000000A2B3C495
-    Client secret: 88qC3kX2Cbd0tXV2sBnqYbS321abcDEF
+    Application ID: 00000000A2B3C495
+    Applications secrets: qOFCYaZKjm6e13aq3fdGiNz
 
 Please insert these values in the matching variables in `onedrive.cfg`:
 
