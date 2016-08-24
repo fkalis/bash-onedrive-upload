@@ -1,0 +1,21 @@
+#!/bin/bash
+script_base_folder=$(dirname "$0")
+source "${script_base_folder}/onedriveb.cfg"
+source "${script_base_folder}/onedriveb-base"
+export json_parser="${script_base_folder}/libs/json/bash-json-parser"
+
+echo "Please open the following URL in your browser and follow the steps until you see a blank page:"
+echo "https://login.microsoftonline.com/common/oauth2/authorize?response_type=code&client_id=${api_client_id}&redirect_uri=${api_reply_url}"
+echo ""
+echo "When ready, please enter the value of the code parameter (from the URL of the blank page) and press return"
+read code
+api_json_result=$(curl -s -d "client_id=${api_client_id}&client_secret=${api_client_secret}&code=${code}&grant_type=authorization_code&redirect_uri=${api_reply_url}&resource=https://api.office.com/discovery/" -X POST "${api_auth_url}")
+
+refresh_token=$(echo "${api_json_result}" | "${json_parser}" | grep -E "^refresh_token=" | cut -d= -f2-)
+if [ "${refresh_token}" != "" ]; then
+    filesystem_save_refresh_token "${refresh_token}"
+    echo "It seems like we have a refresh token, so we are ready to go"
+else
+    echo "Something went wrong, here is the API response:"
+    echo "${api_json_result}"
+fi

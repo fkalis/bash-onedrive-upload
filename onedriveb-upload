@@ -1,0 +1,77 @@
+#!/bin/bash
+
+export script_base_folder=$(dirname "$0")
+export script_base_name=$(basename "$0")
+
+source "${script_base_folder}/onedriveb.cfg"
+source "${script_base_folder}/onedriveb-base"
+
+export json_parser="${script_base_folder}/libs/json/bash-json-parser"
+export debug_mode=0
+export rename_mode=0
+
+while [[ $# -ge 1 ]]; do
+    case $1 in
+        -h|--help)
+            echo "Usage: ${script_base_name} [OPTIONS] file1 [file2...]"
+            echo ""
+            echo "Options:"
+            echo "  .d, --debug   Enable debug mode"
+            echo "  -f, --folder  Upload files into this remote folder"
+            echo "                Directory names are separated with a slash, e.g."
+            echo "                rootFolder/subFolder"
+            echo "                Do NOT use a trailing slash!"
+            echo "  -h, --help    Show this help"
+            echo "  -r, --rename  Rename the files during upload"
+            echo "                For each file you specify you MUST also specify"
+            echo "                the remote filename as the subsequent parameter"
+            echo "                Be especially careful with globbing!"
+            exit 0
+            ;;
+        -f|--folder)
+            shift
+            folder_name="$1"
+            shift
+            ;;
+        -r|--rename)
+            shift
+            rename_mode=1
+            ;;
+        -d|--debug)
+            shift
+            debug_mode=1
+            ;;
+        *)
+            break;
+            ;;
+    esac
+done
+
+if [ -z "$1" ]; then
+        echo "Please specify at least one file to upload"
+        exit 1
+fi
+
+if [ -n "${folder_name}" ]; then
+	# TODO Throw an error, if $2 contains illegal characters like double quotes
+    IFS='/' read -a folder_array <<< "${folder_name}"
+    api_folder_id=$(onedrive_get_or_create_folder "${folder_array[@]}")
+	exit_on_error
+
+	export api_folder_id
+    debug "api_folder_id is now '${api_folder_id}'"
+fi
+
+function start_upload() {
+    source "${script_base_folder}/onedriveb-base"
+
+    onedrive_upload_file "$1" "$2"
+}
+export -f start_upload
+
+if [ "${rename_mode}" == "0" ]; then
+    printf "%s\0" "${@}" | xargs -0 -n1 -P${max_upload_threads} bash -c 'start_upload "$1"' bash
+else
+    printf "%s\0" "${@}" | xargs -0 -n2 -P${max_upload_threads} bash -c 'start_upload "$1" "$2"' bash
+fi
+
