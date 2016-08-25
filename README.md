@@ -200,16 +200,3 @@ If you want to use the session based upload for files smaller than 100 MiB you c
 You can also change the value of `max_chunk_size` to any positive value smaller than 62914560, if you want to use smaller or larger chunks than the default:
 
     export max_chunk_size=62914560
-
-#### To do
-    We need to follow best practices for chunked uploads
-    ```
-    Resume or retry uploads that fail due to connection interruptions or any 5xx errors, including:
-    500 Internal Server Error
-    502 Bad Gateway
-    503 Service Unavailable
-    504 Gateway Timeout
-    Use an exponential back off strategy if any 5xx server errors are returned when resuming or retrying upload requests.
-    For other errors, you should not use an exponential back off strategy but limit the number of retry attempts made.
-    Handle 404 Not Found errors when doing resumable uploads by starting the entire upload over.
-    ```

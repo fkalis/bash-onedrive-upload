@@ -372,7 +372,7 @@ function onedrive_upload_file_chunked() {
 
 	while [ $((${current_chunk}*${max_chunk_size})) -lt ${filesize} ]; do
 		# Acquire a token for each chunk to ensure that it has not yet expired. This WILL slow things down a little bit.
-		api_access_token=$(onedrive_acquire_access_token)
+		api_access_token=$(onedrive_acquire_access_token ${api_resource_id})
 		exit_on_error
 
 		debug "Uploading chunk ${current_chunk} of '${file}'"
@@ -384,15 +384,26 @@ function onedrive_upload_file_chunked() {
 				[ ! "${status_code}" == "200" ] && \
 				[ ! "${status_code}" == "201" ] && \
 				[ ! "${status_code}" == "202" ] && \
-				[ ! "${status_code}" == "204" ]; do
+				[ ! "${status_code}" == "204" ] && \
+				[ ! "${status_code}" == "404" ]; do
 			if [ ${retry_count} -gt 0 ]; then
 				debug "Retrying upload of chunk ${current_chunk} of '${file}' (Previous code: ${status_code})"
 			fi
 
 			status_code=$(curl_upload_chunk "${upload_url}" "${current_chunk}")
+
+			if [ "${status_code}" == "500" ] || \
+					[ "${status_code}" == "502" ] || \
+					[ "${status_code}" == "503" ] || \
+					[ "${status_code}" == "504" ]; then
+				let "timeout = 2**${retry_count}" 
+				let "millis = $RANDOM % 1000"
+				debug "Timeout: ${timeout}.${millis}s"
+				sleep "${timeout}.${millis}"
+			fi
+
 			retry_count=$((retry_count+1))
 		done
-
 		debug "Upload of chunk ${current_chunk} of '${file}' finished (Code: ${status_code})"
 
 		if [ ! "${status_code}" == "200" ] && \
