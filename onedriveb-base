@@ -36,8 +36,10 @@ function urlencode() {
 # ------------------ #
 # --- cURL calls --- #
 # ------------------ #
+# helper function to get back 2 return values from function call
 get_api() { api_uri="$1"; api_resource_id="$2"; }
 
+# $1=helper function name
 function curl_discover_uri() {
 	local fname="$1"
 
@@ -50,7 +52,7 @@ function curl_discover_uri() {
 	local api_version2=$(echo "${api_parsed_json_result}" | grep "serviceApiVersion=v2.0" | cut -d. -f 2)
 	api_uri=$(echo "${api_parsed_json_result}" | grep "value.${api_version2}.serviceEndpointUri" | ${get_json_value})
 	api_resource_id=$(echo "${api_parsed_json_result}" | grep "value.${api_version2}.serviceResourceId" | ${get_json_value})
-	"$fname" "$api_uri" "$api_resource_id"
+	"${fname}" "${api_uri}" "${api_resource_id}"
 }
 
 # $1=folder id
@@ -96,6 +98,7 @@ function curl_create_folder() {
 		error "Could not create folder '$2' in '$1'"
 	fi
 }
+
 # $1=old refresh token
 # $2=serviceResourceId
 function curl_get_access_token() {
@@ -104,12 +107,12 @@ function curl_get_access_token() {
 	    ${curl_opts} \
 	    --request POST \
 	    --header "Content-Type: application/x-www-form-urlencoded" \
-	    --data "client_id=${api_client_id}" \
-	    --data "client_secret=${api_client_secret}" \
-	    --data "redirect_uri=${api_redirect_uri}" \
-	    --data "refresh_token=$1" \
-	    --data "grant_type=refresh_token" \
-	    --data "resource=$2" \
+	    --data-urlencode "client_id=${api_client_id}" \
+	    --data-urlencode "client_secret=${api_client_secret}" \
+	    --data-urlencode "redirect_uri=${api_reply_url}" \
+	    --data-urlencode "refresh_token=$1" \
+	    --data-urlencode "grant_type=refresh_token" \
+	    --data-urlencode "resource=$2" \
 	    ${api_auth_url} | "${json_parser}"
 }
 
@@ -131,6 +134,7 @@ function curl_upload_file() {
 	curl \
 		${curl_opts} \
 		--request PUT \
+		--header "Content-Type: text/plain" \
 		--output /dev/null \
 		--write-out "%{http_code}" \
 		--upload-file "${file}" \
@@ -230,6 +234,7 @@ function filesystem_save_refresh_token() {
 	fi
 }
 
+# $1=serviceResourceId
 function onedrive_acquire_access_token() {
 	local old_refresh_token
 	local new_refresh_token
@@ -385,7 +390,6 @@ function onedrive_upload_file_chunked() {
 			fi
 
 			status_code=$(curl_upload_chunk "${upload_url}" "${current_chunk}")
-			debug "Status code: ${status_code}"
 			retry_count=$((retry_count+1))
 		done
 
