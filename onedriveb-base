@@ -454,7 +454,9 @@ function onedrive_upload_file() {
 	done
 
 	if [ "${status_code}" == "200" ] || [ "${status_code}" == "201" ]; then
-		echo "Successfully uploaded '${file}' as '${remote_filename}'"
+		if [ "${silent_mode}" == "0" ]; then
+			echo "Successfully uploaded '${file}' as '${remote_filename}'"
+		fi
 	else
 		error "An error has occurred while uploading '${file}' (Code: ${status_code})"
 	fi
