@@ -57,7 +57,7 @@ Before you can use this tool, create an application in the [Microsoft Azure Mana
     9. Submit form
     10. Now open your new application and select Configure tab
     11. Change "Reply URL" field to https://onedrive.live.com/about/business/
-    12. Add an application key, press Save and copy the generated Secret
+    12. Add an application key. Select 1 year key, 2 year key will not work. Press Save and copy the generated Secret
     13. Also copy your "Client ID"
     14. In a "Permissions to other applications" press "Add application"
     15. Select "Office 365 SharePoint Online" and "Windows Azure Active Directory"
