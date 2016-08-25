@@ -43,10 +43,10 @@ while [[ $# -ge 1 ]]; do
             shift
             debug_mode=1
             ;;
-	-d|--silent)
-	    shift
-	    silent_mode=1
-	    ;;
+        -s|--silent)
+            shift
+            silent_mode=1
+            ;;
         *)
             break;
             ;;
