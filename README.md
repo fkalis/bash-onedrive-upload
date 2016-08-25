@@ -57,7 +57,7 @@ Before you can use this tool, create an application in the [Microsoft Azure Mana
     9. Submit form
     10. Now open your new application and select Configure tab
     11. Change "Reply URL" field to https://onedrive.live.com/about/business/
-    12. Add an application key. Select 1 year key, 2 year key will not work. Press Save and copy the generated Secret
+    12. Add an application key. Select 1 year key, 2 years key will not work. Press Save and copy the generated Secret
     13. Also copy your "Client ID"
     14. In a "Permissions to other applications" press "Add application"
     15. Select "Office 365 SharePoint Online" and "Windows Azure Active Directory"
@@ -141,12 +141,12 @@ If you need your file to be uploaded with a different filename, you can activate
 Be aware that for each file you specify you must provide the remote filename as the subsequent parameter. This feature can lead to an unexpected behavior when combined with wildcards (globbing) because the pathname expansion is performed by bash before the execution of the script.
 
 
-Configuration (OneDrive Personal)
+Configuration
 -------------
 
 ### Specify an alternate root folder for uploads
 
-If you want to use a folder other than the root folder of your OneDrive as your upload root folder, you need to retrieve its unique id.
+If you want to use a folder other than the root folder of your OneDrive as your upload root folder, you need to retrieve its unique id. 
 
 Open your the [OneDrive Web Interface](https://onedrive.live.com) and navigate to the folder, you want to configure as your new upload folder. The address bar should now show a URL like
 
@@ -155,6 +155,8 @@ Open your the [OneDrive Web Interface](https://onedrive.live.com) and navigate t
 The GET-parameter `id` is the unique folder id you need to place in your `onedrive.cfg`. You have to work with the decoded URL, e.g. `%21` decodes to `!`:
 
     export api_root_folder="items/123419ACDA5678AB!45321"
+
+Unfortunately, you can't get item ID and set it as root folder in this way on OneDrive for Business. URL doesn't contains any ID's. Other methods of setting root folder will work though.
 
 You can also specify any of the [special folders](https://dev.onedrive.com/items/special_folders.htm) provided by the API by simply using
 
