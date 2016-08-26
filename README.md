@@ -156,7 +156,20 @@ The GET-parameter `id` is the unique folder id you need to place in your `onedri
 
     export api_root_folder="items/123419ACDA5678AB!45321"
 
-Unfortunately, you can't get item ID and set it as root folder in this way on OneDrive for Business. URL doesn't contains any ID's. Other methods of setting root folder will work though.
+Unfortunately, you can't get item ID in this way for OneDrive for Business. So use another approach:
+
+    Upload in debug mode any file to non-existent folder, which will be used as root folder.
+
+    ./onedriveb-upload -d -f Backup testfile
+    2016-08-26 09:33:56 Searching for 'Backup' in ''
+    2016-08-26 09:33:56 Creating folder 'Backup' in ''
+    2016-08-26 09:33:58 api_folder_id is now '01KB37ZVWEMG6F4SS6TVGZAM7ACZKOEERY'
+    2016-08-26 09:33:58 Size of testfile is less than or equal to 104857600 bytes, will use simple upload
+    2016-08-26 09:34:01 Uploading 'testfile' as 'testfile' into 01KB37ZVWEMG6F4SS6TVGZAM7ACZKOEERY
+
+    Copy `api_folder_id` and place it in your `onedriveb.cfg`
+
+    export api_root_folder="items/01KB37ZVWEMG6F4SS6TVGZAM7ACZKOEERY"
 
 You can also specify any of the [special folders](https://dev.onedrive.com/items/special_folders.htm) provided by the API by simply using
 

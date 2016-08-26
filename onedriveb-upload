@@ -9,6 +9,7 @@ source "${script_base_folder}/onedriveb-base"
 export json_parser="${script_base_folder}/libs/json/bash-json-parser"
 export debug_mode=0
 export rename_mode=0
+export silent_mode=0
 
 while [[ $# -ge 1 ]]; do
     case $1 in
