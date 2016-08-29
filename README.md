@@ -219,7 +219,7 @@ You can also change the value of `max_chunk_size` to any positive value smaller 
 Contributors
 ------------
 
-- @rootik (OneDrive for Business support)
-- @huming2207 (OSX support)
+- [rootik](https://github.com/rootik) (OneDrive for Business support)
+- [huming2207](https://github.com/huming2207) (OSX support)
 
 Thank you all for your valuable contributions.
