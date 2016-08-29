@@ -215,3 +215,11 @@ If you want to use the session based upload for files smaller than 100 MiB you c
 You can also change the value of `max_chunk_size` to any positive value smaller than 62914560, if you want to use smaller or larger chunks than the default:
 
     export max_chunk_size=62914560
+
+Contributors
+------------
+
+- @rootik (OneDrive for Business support)
+- @huming2207 (OSX support)
+
+Thank you all for your valuable contributions.
