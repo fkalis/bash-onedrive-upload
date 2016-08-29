@@ -386,6 +386,9 @@ function onedrive_upload_file_chunked() {
 }
 
 function onedrive_upload_file() {
+	api_folder_id=$1
+	shift
+
 	if [ ! -f "$1" ]; then
 		error "An error has occurred while uploading '$1' (File does not exist)"
 	fi

@@ -10,27 +10,32 @@ export json_parser="${script_base_folder}/libs/json/bash-json-parser"
 export debug_mode=0
 export rename_mode=0
 
+files=()
+file_folder_ids=()
+
 while [[ $# -ge 1 ]]; do
     case $1 in
         -h|--help)
             echo "Usage: ${script_base_name} [OPTIONS] file1 [file2...]"
             echo ""
             echo "Options:"
-            echo "  .d, --debug   Enable debug mode"
-            echo "  -f, --folder  Upload files into this remote folder"
+            echo "  .d, --debug   Enable debug mode."
+            echo "  -f, --folder  Upload files into this remote folder."
             echo "                Directory names are separated with a slash, e.g."
             echo "                rootFolder/subFolder"
             echo "                Do NOT use a trailing slash!"
-            echo "  -h, --help    Show this help"
-            echo "  -r, --rename  Rename the files during upload"
+            echo "  -h, --help    Show this help."
+            echo "  -r, --rename  Rename the files during upload."
             echo "                For each file you specify you MUST also specify"
-            echo "                the remote filename as the subsequent parameter"
-            echo "                Be especially careful with globbing!"
+            echo "                the remote filename as the subsequent parameter."
+            echo "                WARNINGS:"
+            echo "                1. Be especially careful with globbing."
+            echo "                2. This disables recursive uploads."
             exit 0
             ;;
         -f|--folder)
             shift
-            folder_name="$1"
+            folder_name="${1%/}"
             shift
             ;;
         -r|--rename)
@@ -52,26 +57,93 @@ if [ -z "$1" ]; then
         exit 1
 fi
 
-if [ -n "${folder_name}" ]; then
-	# TODO Throw an error, if $2 contains illegal characters like double quotes
-    IFS='/' read -a folder_array <<< "${folder_name}"
-    api_folder_id=$(onedrive_get_or_create_folder "${folder_array[@]}")
-	exit_on_error
+# $1=subfolder name
+function resolve_folder_id() {
+    local folder_array
+    local subfolder=${1#/}
 
-	export api_folder_id
-    debug "api_folder_id is now '${api_folder_id}'"
-fi
+    if [ -n "${folder_name}" ]; then
+        IFS='/' read -a folder_array <<< "${folder_name}/$subfolder"
+    else
+        IFS='/' read -a folder_array <<< "$subfolder"
+    fi
+
+    resolved_folder_id=$(onedrive_get_or_create_folder "${folder_array[@]}")
+    exit_on_error
+}
+
+function expand_directories() {
+    local current_id=$1
+    shift
+
+    local prefix_len=$1
+    shift
+
+    while [[ $# -ge 1 ]]; do
+        if [ -f "$1" ]; then
+            files+=("$current_id")
+            files+=("$1")
+            debug "Test: $1, $current_id"
+        elif [ -d "$1" ]; then
+            if [ $prefix_len -eq -1 ]; then
+                local directory=$(dirname "$1")
+
+                if [ "$directory" == "." ]; then
+                    prefix_len=0
+                else
+                    prefix_len=${#directory}
+                fi
+
+                echo $directory
+                echo $prefix_len
+            fi
+
+            if test -n "$(find . -maxdepth 1 -name '"${1%/}"/*' -print -quit)"; then
+                echo "Found"
+            else
+                echo "Not found"
+            fi
+            local sub=("${1%/}/"*)
+            resolve_folder_id "${1:$prefix_len}"
+
+            expand_directories "$resolved_folder_id" "$prefix_len" "${sub[@]}"
+        else
+            echo "File not found $1"
+            exit 1
+        fi
+
+        shift
+    done
+}
 
 function start_upload() {
     source "${script_base_folder}/onedrive-base"
 
-    onedrive_upload_file "$1" "$2"
+    onedrive_upload_file "${resolved_folder_id}" "$1" "$2"
 }
 export -f start_upload
 
+function start_recursive_upload() {
+    source "${script_base_folder}/onedrive-base"
+
+    onedrive_upload_file "$1" "$2"
+}
+export -f start_recursive_upload
+
+if [ -n "${folder_name}" ]; then
+    resolve_folder_id ""
+fi
+
 if [ "${rename_mode}" == "0" ]; then
-    printf "%s\0" "${@}" | xargs -0 -n1 -P${max_upload_threads} bash -c 'start_upload "$1"' bash
+    expand_directories "${resolved_folder_id}" -1 "${@}"
+
+    if [ ${#files} -eq 0 ]; then
+        echo "Folder structure created, no files uploaded"
+    else
+        printf "%s\0" "${files[@]}" | xargs -0 -n2 -P${max_upload_threads} bash -c 'start_recursive_upload "$1" "$2"' bash
+    fi
 else
+    export resolved_folder_id
     printf "%s\0" "${@}" | xargs -0 -n2 -P${max_upload_threads} bash -c 'start_upload "$1" "$2"' bash
 fi
 
