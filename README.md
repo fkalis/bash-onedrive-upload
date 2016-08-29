@@ -13,8 +13,7 @@ Prerequisites
 - `cut` is used for value extraction from the filtered json output.
 - `xargs` is used for multi-threaded file uploads.
 - `dd` is used for chunked file uploads.
-- `du` is used to determine the filesize.
-  - On OSX `stat` is used instead of `du` to determine the filesize.
+- `stat` is used to determine the filesize.
 
 Getting started (OneDrive Personal)
 ---------------

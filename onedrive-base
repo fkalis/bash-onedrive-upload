@@ -240,7 +240,7 @@ function filesystem_get_filesize() {
 	if [[ $(uname) == "Darwin" ]]; then
   		stat -f%z "$1"
 	else
-   		du -b "$1" | cut -f1
+   		stat -c%s "$1"
 	fi
 }
 
