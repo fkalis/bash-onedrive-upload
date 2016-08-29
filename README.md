@@ -38,7 +38,7 @@ After the initial configuration you must authorize the app to use your OneDrive 
 
 and follow the steps. You will need a web browser.
 
-After the authorization process has successfully completed you can upload files (up to 100MB each due to API limitations for simple uploads).
+After the authorization process has successfully completed you can upload files.
 
 Getting started (OneDrive for Business)
 ---------------
@@ -82,7 +82,7 @@ After the initial configuration you must authorize the app to use your OneDrive 
 
 and follow the steps. You will need a web browser.
 
-After the authorization process has successfully completed you can upload files (up to 100MB each due to API limitations for simple uploads).
+After the authorization process has successfully completed you can upload files.
 
 
 Usage (OneDrive Personal)
