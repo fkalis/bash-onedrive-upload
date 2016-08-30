@@ -66,7 +66,7 @@ function curl_find_subfolder() {
 	fi
 
 	local folder_name=$(urlencode "$2")
-	local url="${api_uri}/drive/${folder_id}:/${folder_name}?access_token=${api_access_token}"
+	local url="${api_uri}/drive/${folder_id}:/${folder_name}?select=id&access_token=${api_access_token}"
 
 	curl \
 		${curl_opts} \
