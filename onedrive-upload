@@ -9,9 +9,9 @@ source "${script_base_folder}/onedrive-base"
 export json_parser="${script_base_folder}/libs/json/bash-json-parser"
 export debug_mode=0
 export rename_mode=0
+export silent_mode=0
 
 files=()
-file_folder_ids=()
 
 while [[ $# -ge 1 ]]; do
     case $1 in
@@ -63,9 +63,9 @@ function resolve_folder_id() {
     local subfolder=${1#/}
 
     if [ -n "${folder_name}" ]; then
-        IFS='/' read -a folder_array <<< "${folder_name}/$subfolder"
+        IFS='/' read -a folder_array <<< "${folder_name}/${subfolder}"
     else
-        IFS='/' read -a folder_array <<< "$subfolder"
+        IFS='/' read -a folder_array <<< "${subfolder}"
     fi
 
     resolved_folder_id=$(onedrive_get_or_create_folder "${folder_array[@]}")
@@ -81,32 +81,27 @@ function expand_directories() {
 
     while [[ $# -ge 1 ]]; do
         if [ -f "$1" ]; then
-            files+=("$current_id")
+            files+=("${current_id}")
             files+=("$1")
-            debug "Test: $1, $current_id"
         elif [ -d "$1" ]; then
-            if [ $prefix_len -eq -1 ]; then
+            if [ ${prefix_len} -eq -1 ]; then
                 local directory=$(dirname "$1")
 
-                if [ "$directory" == "." ]; then
+                if [ "${directory}" == "." ]; then
                     prefix_len=0
                 else
                     prefix_len=${#directory}
                 fi
-
-                echo $directory
-                echo $prefix_len
             fi
 
-            if test -n "$(find . -maxdepth 1 -name '"${1%/}"/*' -print -quit)"; then
-                echo "Found"
-            else
-                echo "Not found"
-            fi
-            local sub=("${1%/}/"*)
-            resolve_folder_id "${1:$prefix_len}"
+            local folder="${1%/}"
+            resolve_folder_id "${1:${prefix_len}}"
 
-            expand_directories "$resolved_folder_id" "$prefix_len" "${sub[@]}"
+            local sub=("${folder}/"*)
+
+            if test -e "${sub}"; then
+                expand_directories "${resolved_folder_id}" "${prefix_len}" "${sub[@]}"
+            fi
         else
             echo "File not found $1"
             exit 1
@@ -119,14 +114,15 @@ function expand_directories() {
 function start_upload() {
     source "${script_base_folder}/onedrive-base"
 
-    onedrive_upload_file "${resolved_folder_id}" "$1" "$2"
+    onedrive_upload_file "$1" "$2"
 }
 export -f start_upload
 
 function start_recursive_upload() {
     source "${script_base_folder}/onedrive-base"
 
-    onedrive_upload_file "$1" "$2"
+    export api_folder_id="$1"
+    onedrive_upload_file "$2"
 }
 export -f start_recursive_upload
 
@@ -138,12 +134,12 @@ if [ "${rename_mode}" == "0" ]; then
     expand_directories "${resolved_folder_id}" -1 "${@}"
 
     if [ ${#files} -eq 0 ]; then
-        echo "Folder structure created, no files uploaded"
+        info "Folder structure created, no files uploaded"
     else
         printf "%s\0" "${files[@]}" | xargs -0 -n2 -P${max_upload_threads} bash -c 'start_recursive_upload "$1" "$2"' bash
     fi
 else
-    export resolved_folder_id
+    export api_folder_id="${resolved_folder_id}"
     printf "%s\0" "${@}" | xargs -0 -n2 -P${max_upload_threads} bash -c 'start_upload "$1" "$2"' bash
 fi
 
