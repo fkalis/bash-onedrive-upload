@@ -17,7 +17,7 @@ while [[ $# -ge 1 ]]; do
             echo "Usage: ${script_base_name} [OPTIONS] file1 [file2...]"
             echo ""
             echo "Options:"
-            echo "  .d, --debug   Enable debug mode"
+            echo "  -d, --debug   Enable debug mode"
             echo "  -f, --folder  Upload files into this remote folder"
             echo "                Directory names are separated with a slash, e.g."
             echo "                rootFolder/subFolder"
@@ -59,13 +59,19 @@ if [ -z "$1" ]; then
         exit 1
 fi
 
+curl_discover_uri
+exit_on_error
+
+export api_uri
+export api_resource_id 
+
 if [ -n "${folder_name}" ]; then
 	# TODO Throw an error, if $2 contains illegal characters like double quotes
     IFS='/' read -a folder_array <<< "${folder_name}"
     api_folder_id=$(onedrive_get_or_create_folder "${folder_array[@]}")
 	exit_on_error
 
-	export api_folder_id
+    export api_folder_id
     debug "api_folder_id is now '${api_folder_id}'"
 fi
 
