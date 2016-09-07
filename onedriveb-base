@@ -36,23 +36,20 @@ function urlencode() {
 # ------------------ #
 # --- cURL calls --- #
 # ------------------ #
-# helper function to get back 2 return values from function call
-get_api() { api_uri="$1"; api_resource_id="$2"; }
-
-# $1=helper function name
 function curl_discover_uri() {
-	local fname="$1"
-
 	local api_access_token=$(onedrive_acquire_access_token ${api_discovery_id}) 
+	exit_on_error
 
 	local api_parsed_json_result=$(curl \
 	    ${curl_opts} \
-	    --header "Authorization: Bearer ${api_access_token}" \
+	    --get \
+            --header "Authorization: Bearer ${api_access_token}" \
+            --header "Accept: application/json; odata.metadata=none" \
+	    --data-urlencode "\$select=serviceEndpointUri,serviceResourceId" \
+	    --data-urlencode "\$filter=capability eq 'MyFiles' and serviceApiVersion eq 'v2.0'" \
 	    "${api_discovery_url}" | "${json_parser}")
-	local api_version2=$(echo "${api_parsed_json_result}" | grep "serviceApiVersion=v2.0" | cut -d. -f 2)
-	api_uri=$(echo "${api_parsed_json_result}" | grep "value.${api_version2}.serviceEndpointUri" | ${get_json_value})
-	api_resource_id=$(echo "${api_parsed_json_result}" | grep "value.${api_version2}.serviceResourceId" | ${get_json_value})
-	"${fname}" "${api_uri}" "${api_resource_id}"
+	api_uri=$(echo "${api_parsed_json_result}" | grep "serviceEndpointUri" | ${get_json_value})
+	api_resource_id=$(echo "${api_parsed_json_result}" | grep "serviceResourceId" | ${get_json_value})
 }
 
 # $1=folder id
@@ -64,13 +61,15 @@ function curl_find_subfolder() {
 	else
 		folder_id="items/$1"
 	fi
-
 	local folder_name=$(urlencode "$2")
-	local url="${api_uri}/drive/${folder_id}:/${folder_name}?access_token=${api_access_token}"
+	local url="${api_uri}/drive/${folder_id}:/${folder_name}"
 
 	curl \
 		${curl_opts} \
-		--request GET \
+		--get \
+		--header "Authorization: Bearer ${api_access_token}" \
+		--header "Accept: application/json; odata.metadata=none" \
+		--data-urlencode "select=id" \
 		"${url}" | "${json_parser}"
 }
 
@@ -81,16 +80,18 @@ function curl_create_folder() {
 	local url
 
 	if [ -z "$1" ]; then
-		url="${api_uri}/drive/${api_root_folder}/children?access_token=${api_access_token}"
+		url="${api_uri}/drive/${api_root_folder}/children?select=id"
 	else
 		local folder_id=$(urlencode "$1")
-		url="${api_uri}/drive/items/${folder_id}/children?access_token=${api_access_token}"
+		url="${api_uri}/drive/items/${folder_id}/children?select=id"
 	fi
 
 	curl \
 		${curl_opts} \
 		--request POST \
+		--header "Authorization: Bearer ${api_access_token}" \
 		--header "Content-Type: application/json" \
+		--header "Accept: application/json; odata.metadata=none" \
 		--data "${json_payload}" \
 		"${url}" | "${json_parser}"
 
@@ -107,6 +108,7 @@ function curl_get_access_token() {
 	    ${curl_opts} \
 	    --request POST \
 	    --header "Content-Type: application/x-www-form-urlencoded" \
+	    --header "Accept: application/json; odata.metadata=none" \
 	    --data-urlencode "client_id=${api_client_id}" \
 	    --data-urlencode "client_secret=${api_client_secret}" \
 	    --data-urlencode "redirect_uri=${api_reply_url}" \
@@ -123,18 +125,20 @@ function curl_upload_file() {
 	
 	if [ -z "$1" ]; then
 		# No folder id, upload to root folder
-		url="${api_uri}/drive/${api_root_folder}/children/${url_filename}/content?access_token=${api_access_token}"
+		url="${api_uri}/drive/${api_root_folder}/children/${url_filename}/content"
 		debug "Uploading '${file}' as '${remote_filename}' into root folder (${api_root_folder})"
 	else
 		local folder_id=$(urlencode "$1")
-		url="${api_uri}/drive/items/${folder_id}/children/${url_filename}/content?access_token=${api_access_token}"
+		url="${api_uri}/drive/items/${folder_id}/children/${url_filename}/content"
 		debug "Uploading '${file}' as '${remote_filename}' into ${folder_id}"
 	fi
 
 	curl \
 		${curl_opts} \
 		--request PUT \
+		--header "Authorization: Bearer ${api_access_token}" \
 		--header "Content-Type: text/plain" \
+		--header "Accept: application/json; odata.metadata=none" \
 		--output /dev/null \
 		--write-out "%{http_code}" \
 		--upload-file "${file}" \
@@ -150,17 +154,19 @@ function curl_request_upload_session() {
 
 	if [ -z "$1" ]; then
 		# No folder id, upload to root folder
-		url="${api_uri}/drive/${api_root_folder}:/${url_filename}:/upload.createSession?access_token=${api_access_token}"
+		url="${api_uri}/drive/${api_root_folder}:/${url_filename}:/upload.createSession"
 		debug "Uploading '${file}' as '${remote_filename}' into root folder (${api_root_folder})"
 	else
-		url="${api_uri}/drive/items/${folder_id}:/${url_filename}:/upload.createSession?access_token=${api_access_token}"
+		url="${api_uri}/drive/items/${folder_id}:/${url_filename}:/upload.createSession"
 		debug "Uploading '${file}' as '${remote_filename}' into ${folder_id}"
 	fi
 
 	curl \
 		${curl_opts} \
 		--request POST \
+                --header "Authorization: Bearer ${api_access_token}" \
 		--header "Content-Type: application/json" \
+		--header "Accept: application/json; odata.metadata=none" \
 		--data "${json_payload}" \
 		"${url}" | "${json_parser}"
 
@@ -202,10 +208,12 @@ function curl_upload_chunk() {
 		--request PUT \
 		--output /dev/null \
 		--write-out "%{http_code}" \
+                --header "Authorization: Bearer ${api_access_token}" \
+		--header "Accept: application/json; odata.metadata=none" \
 		--header "Content-Length: ${current_range_length}" \
 		--header "Content-Range: bytes ${current_range_start}-${current_range_end}/${filesize}" \
 		--data-binary @- \
-		"${1}&access_token=${api_access_token}"
+		"${1}"
 }
 
 
@@ -297,7 +305,6 @@ function onedrive_request_upload_session() {
 function onedrive_find_folder_id() {
 	debug "Searching for '$2' in '$1'"
 	local api_parsed_json_result=$(curl_find_subfolder "$1" "$2")
-
 	echo "${api_parsed_json_result}" | grep -E "^id=" | ${get_json_value}
 }
 
@@ -323,7 +330,7 @@ function onedrive_get_or_create_folder() {
 	local api_access_token
 	local current_folder_id="${api_folder_id}"
 	local next_folder_id
-	curl_discover_uri 'get_api'
+
 	api_access_token=$(onedrive_acquire_access_token ${api_resource_id})
 	exit_on_error
 
@@ -350,7 +357,7 @@ function onedrive_upload_file_simple() {
 	if [ ! -f "${file}" ]; then
 		error "An error has occurred while uploading '${file}' (File does not exist)"
 	fi
-	curl_discover_uri 'get_api'
+
 	api_access_token=$(onedrive_acquire_access_token ${api_resource_id})
 	exit_on_error
 
@@ -358,7 +365,6 @@ function onedrive_upload_file_simple() {
 }
 
 function onedrive_upload_file_chunked() {
-	curl_discover_uri 'get_api'
 	api_access_token=$(onedrive_acquire_access_token ${api_resource_id})
 	exit_on_error
 
@@ -391,7 +397,7 @@ function onedrive_upload_file_chunked() {
 			fi
 
 			status_code=$(curl_upload_chunk "${upload_url}" "${current_chunk}")
-
+			# Handle 429 Throttle Retry-After: seconds response
 			if [ "${status_code}" == "500" ] || \
 					[ "${status_code}" == "502" ] || \
 					[ "${status_code}" == "503" ] || \

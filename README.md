@@ -83,7 +83,7 @@ After the initial configuration you must authorize the app to use your OneDrive 
 and follow the steps. You will need a web browser.
 
 After the authorization process has successfully completed you can upload files.
-
+If you see error `AADSTS70002: Error validating credentials. AADSTS50012: Invalid client secret is provided`, try to add a new key and use new secret.
 
 Usage (OneDrive Personal)
 -----
