@@ -360,6 +360,8 @@ function onedrive_upload_file_chunked() {
 	upload_url=$(onedrive_request_upload_session "${api_folder_id}")
 	exit_on_error
 
+	debug "Upload url is now ${upload_url}"
+
 	local current_chunk=0
 	local status_code=""
 
