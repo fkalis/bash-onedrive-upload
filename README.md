@@ -220,5 +220,6 @@ Contributors
 
 - [rootik](https://github.com/rootik) (OneDrive for Business support)
 - [huming2207](https://github.com/huming2207) (OSX support)
+- [laufi](https://github.com/laufi)
 
 Thank you all for your valuable contributions.
