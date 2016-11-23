@@ -21,6 +21,12 @@ function debug() {
 	fi
 }
 
+function info() {
+	if [ "${silent_mode}" == "0" ]; then
+		echo "$1"
+	fi
+}
+
 # $1=parameter to encode
 function urlencode() {
 	curl \
@@ -417,7 +423,7 @@ function onedrive_upload_file() {
 	done
 
 	if [ "${status_code}" == "200" ] || [ "${status_code}" == "201" ]; then
-		echo "Successfully uploaded '${file}' as '${remote_filename}'"
+		info "Successfully uploaded '${file}' as '${remote_filename}'"
 	else
 		error "An error has occurred while uploading '${file}' (Code: ${status_code})"
 	fi
