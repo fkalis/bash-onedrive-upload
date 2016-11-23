@@ -4,18 +4,32 @@ source "${script_base_folder}/onedrive.cfg"
 source "${script_base_folder}/onedrive-base"
 export json_parser="${script_base_folder}/libs/json/bash-json-parser"
 
+application_type=$(echo "${api_client_id}" | grep -E "^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$" && echo "1" || echo "0")
+
+if [ "$application_type" == "0" ]; then
+	# Live SDK application
+	echo "Live SDK applications are not longer supported by this script."
+	echo ""
+	echo "Please visit https://apps.dev.microsoft.com/#/appList and create a new converged application."
+	echo "Also note, that you have to change the credentials in all your existing clients and reauthorize them."
+	exit 1
+fi
+
+# Converged application
+browser_url="${api_auth_base_url}/authorize?client_id=${api_client_id}&response_type=code&redirect_uri=${api_reply_url}&response_mode=query&scope=openid offline_access ${api_permissions}"
+
 echo "Please open the following URL in your browser and follow the steps until you see a blank page:"
-echo "https://login.live.com/oauth20_authorize.srf?client_id=${api_client_id}&scope=wl.offline_access%20${api_permissions}&response_type=code&redirect_uri=https://login.live.com/oauth20_desktop.srf"
+echo "${browser_url}"
 echo ""
 echo "When ready, please enter the value of the code parameter (from the URL of the blank page) and press return"
 read code
-api_json_result=$(curl -s -d "client_id=${api_client_id}&client_secret=${api_client_secret}&code=${code}&grant_type=authorization_code&redirect_uri=https://login.live.com/oauth20_desktop.srf" -X POST "${api_auth_url}")
+autorization_result=$(curl_acquire_refresh_token "${code}")
 
-refresh_token=$(echo "${api_json_result}" | "${json_parser}" | grep -E "^refresh_token=" | cut -d= -f2-)
+refresh_token=$(echo "${authorization_result}" | grep -E "^refresh_token=" | cut -d= -f2-)
 if [ "${refresh_token}" != "" ]; then
     filesystem_save_refresh_token "${refresh_token}"
     echo "It seems like we have a refresh token, so we are ready to go"
 else
     echo "Something went wrong, here is the API response:"
-    echo "${api_json_result}"
+    echo "${authorization_result}"
 fi

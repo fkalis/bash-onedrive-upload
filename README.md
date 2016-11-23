@@ -18,19 +18,27 @@ Prerequisites
 Getting started (OneDrive Personal)
 ---------------
 
-Before you can use this tool, create an application in the [Microsoft account Developer Center](https://apps.dev.microsoft.com/#/appList/create/sapi) to generate your custom Client ID and Client secret. Notice, that you need to add a new platform of type `Mobile application`.
+Before you can use this tool, create an application in the [Microsoft Application Registration Portal](https://https://apps.dev.microsoft.com/#/appList).
 
-When you are already logged in into your Microsoft account, you will be redirected to the right form. In case you sign in first, pay attention to create your application in the `Live SDK applications` section, **not** in the `Converged applications` section, as the newer application type is not (yet) supported by `onedrive-authorize`. Please also ensure that the Application ID (Client ID) does not contain any dashes.
+Please add a new `Converged application`. The old `Live SDK applications` are **no longer supported** by this script.
 
-Afterwards your overview should show your freshly created credentials in the form
+Configure the newly created application as follows:
 
-    Application ID: 00000000A2B3C495
-    Applications secrets: qOFCYaZKjm6e13aq3fdGiNz
+- Create a password by clicking `Generate New Password`.
+- Create a new platform by clicking `Add Platform`. Choose `Web` and enter a `Redirect URI`. You can use `http://localhost`. This URI will only be used for the authorization process.
+- Make sure the checkbox for `Live SDK support` is checked.
+
+By now you should have acquired three values
+
+    Application ID: 5e4504e0-e176-4a4b-8c6e-4313812b72d2
+    Applications password: 7JLy4n9HB4Ym6eUCQtyxh0K
+    Redirect URI: http://localhost
 
 Please insert these values in the matching variables in `onedrive.cfg`:
 
-    export api_client_id="00000000A2B3C495"
-    export api_client_secret="88qC3kX2Cbd0tXV2sBnqYbS321abcDEF"
+    export api_client_id="5e4504e0-e176-4a4b-8c6e-4313812b72d2"
+    export api_client_secret="7JLy4n9HB4Ym6eUCQtyxh0K"
+    export api_reply_url="http://localhost"
 
 After the initial configuration you must authorize the app to use your OneDrive account. Run
 
@@ -51,7 +59,7 @@ Before you can use this tool, create an application in the [Microsoft Azure Mana
     4. Press Add
     5. Select "Add an application my organization developing"
     6. Choose Name and select "Web application and/or web API"
-    7. In a "Sign-on URL" write https://login.microsoftonline.com/ 
+    7. In a "Sign-on URL" write https://login.microsoftonline.com/
     8. In an "APP ID URI" write https://onedrive.live.com/about/business/
     9. Submit form
     10. Now open your new application and select Configure tab
@@ -63,7 +71,7 @@ Before you can use this tool, create an application in the [Microsoft Azure Mana
     16. Grant "Sign in and read user profile" delegated permission to "Windows Azure Active Directory"
     17. Grant "Read user files" and "Read and write user files" delegated permissions to "Office 365 SharePoint Online"
     18. Save changes
-    
+
 Afterwards you should have three components of authorization process:
 
     Client ID: a66d1076-4c04-4a33-3bb2-2578c4891886
@@ -145,7 +153,7 @@ Configuration
 
 ### Specify an alternate root folder for uploads
 
-If you want to use a folder other than the root folder of your OneDrive as your upload root folder, you need to retrieve its unique id. 
+If you want to use a folder other than the root folder of your OneDrive as your upload root folder, you need to retrieve its unique id.
 
 Open your the [OneDrive Web Interface](https://onedrive.live.com) and navigate to the folder, you want to configure as your new upload folder. The address bar should now show a URL like
 
@@ -189,11 +197,11 @@ Keep in mind that this will be the new root folder of your OneDrive as seen by t
 
 If you don't want the script to have access to all your folders and files you can request less permissions during the authorization process. Simply change the value
 
-    export api_permissions="onedrive.readwrite"
+    export api_permissions="https://graph.microsoft.com/files.readwrite"
 
 to
 
-    export api_permissions="onedrive.approot"
+    export api_permissions="https://graph.microsoft.com/files.readwrite.appfolder"
 
 and run the authorization process. You might need to remove the apps permissions prior to that ([Link](https://account.live.com/consent/Manage)) if you have already requested `onedrive.readwrite` permissions.
 

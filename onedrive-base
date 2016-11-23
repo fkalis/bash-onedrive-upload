@@ -1,5 +1,5 @@
-api_auth_url="https://login.live.com/oauth20_token.srf"
-api_base_url="https://api.onedrive.com/v1.0"
+api_auth_base_url="https://login.microsoftonline.com/common/oauth2/v2.0"
+api_base_url="https://graph.microsoft.com/v1.0/me"
 get_json_value="cut -d= -f2-"
 curl_opts="--silent --retry ${http_retries} --retry-delay 10"
 
@@ -45,7 +45,23 @@ function curl_refresh_access_token() {
 		--data-urlencode "client_secret=${api_client_secret}" \
 		--data-urlencode "refresh_token=$1" \
 		--data-urlencode "grant_type=refresh_token" \
-		"${api_auth_url}" | "${json_parser}"
+		"${api_auth_base_url}/token" | "${json_parser}"
+}
+
+# $1=authorization code
+function curl_acquire_refresh_token() {
+	debug "Acquiring first refresh token"
+
+	curl \
+		${curl_opts} \
+		--request POST \
+		--data-urlencode "client_id=${api_client_id}" \
+		--data-urlencode "client_secret=${api_client_secret}" \
+		--data-urlencode "code=$1" \
+		--data-urlencode "grant_type=authorization_code" \
+		--data-urlencode "redirect_uri=${api_reply_url}" \
+		--data-urlencode "scope=openid offline_access ${api_permissions}" \
+		"${api_auth_base_url}/token" | "${json_parser}"
 }
 
 # $1=folder id
@@ -59,11 +75,12 @@ function curl_find_subfolder() {
 	fi
 
 	local folder_name=$(urlencode "$2")
-	local url="${api_base_url}/drive/${folder_id}:/${folder_name}?access_token=${api_access_token}"
+	local url="${api_base_url}/drive/${folder_id}:/${folder_name}"
 
 	curl \
 		${curl_opts} \
 		--request GET \
+		--header "Authorization: Bearer ${api_access_token}" \
 		"${url}" | "${json_parser}"
 }
 
@@ -74,16 +91,17 @@ function curl_create_folder() {
 	local url
 
 	if [ -z "$1" ]; then
-		url="${api_base_url}/drive/${api_root_folder}/children?access_token=${api_access_token}"
+		url="${api_base_url}/drive/${api_root_folder}/children"
 	else
 		local folder_id=$(urlencode "$1")
-		url="${api_base_url}/drive/items/${folder_id}/children?access_token=${api_access_token}"
+		url="${api_base_url}/drive/items/${folder_id}/children"
 	fi
 
 	curl \
 		${curl_opts} \
 		--request POST \
 		--header "Content-Type: application/json" \
+		--header "Authorization: Bearer ${api_access_token}" \
 		--data "${json_payload}" \
 		"${url}" | "${json_parser}"
 
@@ -99,17 +117,18 @@ function curl_upload_file() {
 
 	if [ -z "$1" ]; then
 		# No folder id, upload to root folder
-		url="${api_base_url}/drive/${api_root_folder}/children/${url_filename}/content?access_token=${api_access_token}"
+		url="${api_base_url}/drive/${api_root_folder}/children/${url_filename}/content"
 		debug "Uploading '${file}' as '${remote_filename}' into root folder (${api_root_folder})"
 	else
 		local folder_id=$(urlencode "$1")
-		url="${api_base_url}/drive/items/${folder_id}/children/${url_filename}/content?access_token=${api_access_token}"
+		url="${api_base_url}/drive/items/${folder_id}/children/${url_filename}/content"
 		debug "Uploading '${file}' as '${remote_filename}' into ${folder_id}"
 	fi
 
 	curl \
 		${curl_opts} \
 		--request PUT \
+		--header "Authorization: bearer ${api_access_token}" \
 		--output /dev/null \
 		--write-out "%{http_code}" \
 		--upload-file "${file}" \
@@ -125,10 +144,10 @@ function curl_request_upload_session() {
 
 	if [ -z "$1" ]; then
 		# No folder id, upload to root folder
-		url="${api_base_url}/drive/${api_root_folder}:/${url_filename}:/upload.createSession?access_token=${api_access_token}"
+		url="${api_base_url}/drive/${api_root_folder}:/${url_filename}:/createUploadSession"
 		debug "Uploading '${file}' as '${remote_filename}' into root folder (${api_root_folder})"
 	else
-		url="${api_base_url}/drive/items/${folder_id}:/${url_filename}:/upload.createSession?access_token=${api_access_token}"
+		url="${api_base_url}/drive/items/${folder_id}:/${url_filename}:/createUploadSession"
 		debug "Uploading '${file}' as '${remote_filename}' into ${folder_id}"
 	fi
 
@@ -136,6 +155,7 @@ function curl_request_upload_session() {
 		${curl_opts} \
 		--request POST \
 		--header "Content-Type: application/json" \
+		--header "Authorization: Bearer ${api_access_token}" \
 		--data "${json_payload}" \
 		"${url}" | "${json_parser}"
 
@@ -180,7 +200,7 @@ function curl_upload_chunk() {
 		--header "Content-Length: ${current_range_length}" \
 		--header "Content-Range: bytes ${current_range_start}-${current_range_end}/${filesize}" \
 		--data-binary @- \
-		"${1}?access_token=${api_access_token}"
+		"${1}"
 }
 
 # ------------------------ #
