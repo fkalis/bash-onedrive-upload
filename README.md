@@ -20,7 +20,7 @@ Getting started (OneDrive Personal)
 
 Before you can use this tool, create an application in the [Microsoft account Developer Center](https://apps.dev.microsoft.com/#/appList/create/sapi) to generate your custom Client ID and Client secret. Notice, that you need to add a new platform of type `Mobile application`.
 
-When you are already logged in into your Microsoft account, you will be redirected to the right form. In case you sign in first, pay attention to create your application in the `Live SDK applications` section, **not** in the "Converged applications" section, as the newer application type is not (yet) supported by `onedrive-authorize`. Please also ensure that the Application ID (Client ID) does not contain any dashes.
+When you are already logged in into your Microsoft account, you will be redirected to the right form. In case you sign in first, pay attention to create your application in the `Live SDK applications` section, **not** in the `Converged applications` section, as the newer application type is not (yet) supported by `onedrive-authorize`. Please also ensure that the Application ID (Client ID) does not contain any dashes.
 
 Afterwards your overview should show your freshly created credentials in the form
 
