@@ -16,7 +16,7 @@ if [ "$application_type" == "0" ]; then
 fi
 
 # Converged application
-browser_url="${api_auth_base_url}/authorize?client_id=${api_client_id}&response_type=code&redirect_uri=${api_reply_url}&response_mode=query&scope=openid offline_access ${api_permissions}"
+browser_url="${api_auth_base_url}/authorize?client_id=${api_client_id}&response_type=code&redirect_uri=${api_reply_url}&response_mode=query&scope=offline_access ${api_permissions}"
 
 echo "Please open the following URL in your browser and follow the steps until you see a blank page:"
 echo "${browser_url}"

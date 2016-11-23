@@ -60,7 +60,7 @@ function curl_acquire_refresh_token() {
 		--data-urlencode "code=$1" \
 		--data-urlencode "grant_type=authorization_code" \
 		--data-urlencode "redirect_uri=${api_reply_url}" \
-		--data-urlencode "scope=openid offline_access ${api_permissions}" \
+		--data-urlencode "scope=offline_access ${api_permissions}" \
 		"${api_auth_base_url}/token" | "${json_parser}"
 }
 
