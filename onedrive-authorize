@@ -23,7 +23,7 @@ echo "${browser_url}"
 echo ""
 echo "When ready, please enter the value of the code parameter (from the URL of the blank page) and press return"
 read code
-autorization_result=$(curl_acquire_refresh_token "${code}")
+authorization_result=$(curl_acquire_refresh_token "${code}")
 
 refresh_token=$(echo "${authorization_result}" | grep -E "^refresh_token=" | cut -d= -f2-)
 if [ "${refresh_token}" != "" ]; then
