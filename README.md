@@ -18,7 +18,7 @@ Prerequisites
 Getting started (OneDrive Personal)
 ---------------
 
-Before you can use this tool, create an application in the [Microsoft Application Registration Portal](https://https://apps.dev.microsoft.com/#/appList).
+Before you can use this tool, create an application in the [Microsoft Application Registration Portal](https://apps.dev.microsoft.com/#/appList).
 
 Please add a new `Converged application`. The old `Live SDK applications` are **no longer supported** by this script.
 
