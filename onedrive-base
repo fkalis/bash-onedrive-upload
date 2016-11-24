@@ -273,8 +273,6 @@ function onedrive_request_upload_session() {
 	exit_on_error
 
 	upload_url=$(echo "${api_parsed_json_result}" | grep "uploadUrl" | ${get_json_value})
-	# Remove access_token from upload_url
-	upload_url=$(echo "${upload_url/?access_token=*/}")
 
 	if [ "${upload_url}" == "" ]; then
 		error "An error has occurred while requesting an upload session: ${api_parsed_json_result}"
