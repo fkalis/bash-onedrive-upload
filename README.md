@@ -5,6 +5,8 @@ Upload files to [Microsoft OneDrive](https://onedrive.live.com) via linux comman
 
 Use `git clone --recursive` to checkout the repository including all required submodules.
 
+If you download the contents of this repository as .zip, you also need to manually download the [bash-json-parser](https://github.com/fkalis/bash-json-parser/archive/master.zip) and extract it into `./libs/json`, because submodules are not included in the ZIP file.
+
 Prerequisites
 -------------
 
