@@ -377,12 +377,23 @@ function onedrive_upload_file_chunked() {
 				[ ! "${status_code}" == "200" ] && \
 				[ ! "${status_code}" == "201" ] && \
 				[ ! "${status_code}" == "202" ] && \
-				[ ! "${status_code}" == "204" ]; do
+				[ ! "${status_code}" == "204" ] && \
+				[ ! "${status_code}" == "404" ]; do
 			if [ ${retry_count} -gt 0 ]; then
 				debug "Retrying upload of chunk ${current_chunk} of '${file}' (Previous code: ${status_code})"
 			fi
 
 			status_code=$(curl_upload_chunk "${upload_url}" "${current_chunk}")
+			# TODO: Handle 429 Throttle Retry-After: seconds response
+			if [ "${status_code}" == "500" ] || \
+					[ "${status_code}" == "502" ] || \
+					[ "${status_code}" == "503" ] || \
+					[ "${status_code}" == "504" ]; then
+				local timeout=$((2**${retry_count}))
+				local millis=$(($RANDOM%1000))
+				debug "Timeout: ${timeout}.${millis}s"
+				sleep "${timeout}.${millis}"
+			fi
 
 			retry_count=$((retry_count+1))
 		done
