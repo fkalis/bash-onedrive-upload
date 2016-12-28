@@ -101,40 +101,25 @@ To upload a single file simply type
     # OneDrive Personal
     $ ./onedrive-upload file1
 
-    # OneDrive for Business
-    $ ./onedriveb-upload file1
-
 You can also upload multiple files, either by explicitly specifying each one
 
     # OneDrive Personal
     $ ./onedrive-upload file1 file2
-
-    # OneDrive for Business
-    $ ./onedriveb-upload file1 file2
 
 or just use wildcards (globbing)
 
     # OneDrive Personal
     $ ./onedrive-upload file*.png
 
-    # OneDrive for Business
-    $ ./onedriveb-upload file*.png
-
 It is also possible to recursively upload a whole folder
 
     # OneDrive Personal
     $ ./onedrive-upload /path/to/folder
 
-    # OneDrive for Business
-    # Not yet supported
-
 You can also specify a destination folder relative to the root folder configured in `onedrive.cfg`:
 
     # OneDrive Personal
     $ ./onedrive-upload -f "relative/path" file
-
-    # OneDrive for Business
-    $ ./onedriveb-upload -f "relative/path" file
 
 This command will automatically determine all of the needed folder ids and recursively create all subfolders that do not yet exist.
 
@@ -142,9 +127,6 @@ If you need your file to be uploaded with a different filename, you can activate
 
     # OneDrive Personal
     $ ./onedrive-upload -r ./file1.txt renamed_file1.txt ./file2.txt renamed_file2.txt
-
-    # OneDrive for Business
-    $ ./onedriveb-upload -r ./file1.txt renamed_file1.txt ./file2.txt renamed_file2.txt
 
 Be aware that for each file you specify you must provide the remote filename as the subsequent parameter. This feature can lead to an unexpected behavior when combined with wildcards (globbing) because the pathname expansion is performed by bash before the execution of the script. Also do not use this when recursively uploading folders.
 
