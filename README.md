@@ -1,7 +1,7 @@
 bash-onedrive-upload
 ====================
 
-Upload files to [Microsoft OneDrive](https://onedrive.live.com) via linux command line using the [REST API](http://onedrive.github.io/).
+Upload files to [Microsoft OneDrive](https://onedrive.live.com) via linux command line using [Microsoft Graph](https://graph.microsoft.io).
 
 Use `git clone --recursive` to checkout the repository including all required submodules.
 
