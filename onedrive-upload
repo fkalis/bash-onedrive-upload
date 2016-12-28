@@ -31,6 +31,8 @@ while [[ $# -ge 1 ]]; do
             echo "                WARNINGS:"
             echo "                1. Be especially careful with globbing."
             echo "                2. This disables recursive uploads."
+            echo " -s, --silent   Silent mode for use in crontab scripts."
+            echo "                Return only exit code."
             exit 0
             ;;
         -f|--folder)
@@ -45,6 +47,10 @@ while [[ $# -ge 1 ]]; do
         -d|--debug)
             shift
             debug_mode=1
+            ;;
+        -s|--silent)
+            shift
+            silent_mode=1
             ;;
         *)
             break;
