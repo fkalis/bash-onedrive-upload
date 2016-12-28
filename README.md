@@ -93,60 +93,60 @@ and follow the steps. You will need a web browser.
 After the authorization process has successfully completed you can upload files.
 If you see error `AADSTS70002: Error validating credentials. AADSTS50012: Invalid client secret is provided`, try to add a new key and use new secret.
 
-Usage (OneDrive Personal)
+Usage
 -----
 
 To upload a single file simply type
 
+    # OneDrive Personal
     $ ./onedrive-upload file1
 
-You can also upload multiple files, either by explicitly specifying each one
-
-    $ ./onedrive-upload file1 file2
-
-or just use wildcards (globbing)
-
-    $ ./onedrive-upload file*.png
-
-You can also specify a destination folder relative to the root folder configured in `onedrive.cfg`:
-
-    $ ./onedrive-upload -f "relative/path" file1
-
-This command will automatically determine all of the needed folder ids and recursively create all subfolders that do not yet exist.
-
-If you need your file to be uploaded with a different filename, you can activate the renaming mode:
-
-    $ ./onedrive-upload -r ./file1.txt renamed_file1.txt ./file2.txt renamed_file2.txt
-
-Be aware that for each file you specify you must provide the remote filename as the subsequent parameter. This feature can lead to an unexpected behavior when combined with wildcards (globbing) because the pathname expansion is performed by bash before the execution of the script.
-
-Usage (OneDrive for Business)
------
-
-To upload a single file simply type
-
+    # OneDrive for Business
     $ ./onedriveb-upload file1
 
 You can also upload multiple files, either by explicitly specifying each one
 
+    # OneDrive Personal
+    $ ./onedrive-upload file1 file2
+
+    # OneDrive for Business
     $ ./onedriveb-upload file1 file2
 
 or just use wildcards (globbing)
 
+    # OneDrive Personal
+    $ ./onedrive-upload file*.png
+
+    # OneDrive for Business
     $ ./onedriveb-upload file*.png
+
+It is also possible to recursively upload a whole folder
+
+    # OneDrive Personal
+    $ ./onedrive-upload /path/to/folder
+
+    # OneDrive for Business
+    # Not yet supported
 
 You can also specify a destination folder relative to the root folder configured in `onedrive.cfg`:
 
-    $ ./onedriveb-upload -f "relative/path" file1
+    # OneDrive Personal
+    $ ./onedrive-upload -f "relative/path" file
+
+    # OneDrive for Business
+    $ ./onedriveb-upload -f "relative/path" file
 
 This command will automatically determine all of the needed folder ids and recursively create all subfolders that do not yet exist.
 
 If you need your file to be uploaded with a different filename, you can activate the renaming mode:
 
+    # OneDrive Personal
+    $ ./onedrive-upload -r ./file1.txt renamed_file1.txt ./file2.txt renamed_file2.txt
+
+    # OneDrive for Business
     $ ./onedriveb-upload -r ./file1.txt renamed_file1.txt ./file2.txt renamed_file2.txt
 
-Be aware that for each file you specify you must provide the remote filename as the subsequent parameter. This feature can lead to an unexpected behavior when combined with wildcards (globbing) because the pathname expansion is performed by bash before the execution of the script.
-
+Be aware that for each file you specify you must provide the remote filename as the subsequent parameter. This feature can lead to an unexpected behavior when combined with wildcards (globbing) because the pathname expansion is performed by bash before the execution of the script. Also do not use this when recursively uploading folders.
 
 Configuration
 -------------
