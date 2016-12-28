@@ -78,7 +78,7 @@ Afterwards you should have three components of authorization process:
     Secret: x73LaIRCimtjiiw/cuHA000Ozwcf4nz1Ovcpi0xUCHI=
     Reply URL: https://onedrive.live.com/about/business/
 
-Please insert these values in the matching variables in `onedriveb.cfg`:
+Please insert these values in the matching variables in `onedrive.cfg`:
 
     export api_client_id="a66d1076-4c04-4a33-3bb2-2578c4891886"
     export api_client_secret="x73LaIRCimtjiiw/cuHA000Ozwcf4nz1Ovcpi0xUCHI="
@@ -86,7 +86,7 @@ Please insert these values in the matching variables in `onedriveb.cfg`:
 
 After the initial configuration you must authorize the app to use your OneDrive for Business account. Run
 
-    $ ./onedriveb-authorize
+    $ ./onedrive-authorize
 
 and follow the steps. You will need a web browser.
 
@@ -149,14 +149,14 @@ Unfortunately, you can't get item ID in this way for OneDrive for Business. So u
 
     Upload in debug mode any file to non-existent folder, which will be used as root folder.
 
-    ./onedriveb-upload -d -f Backup testfile
+    ./onedrive-upload -d -f Backup testfile
     2016-08-26 09:33:56 Searching for 'Backup' in ''
     2016-08-26 09:33:56 Creating folder 'Backup' in ''
     2016-08-26 09:33:58 api_folder_id is now '01KB37ZVWEMG6F4SS6TVGZAM7ACZKOEERY'
     2016-08-26 09:33:58 Size of testfile is less than or equal to 104857600 bytes, will use simple upload
     2016-08-26 09:34:01 Uploading 'testfile' as 'testfile' into 01KB37ZVWEMG6F4SS6TVGZAM7ACZKOEERY
 
-    Copy `api_folder_id` and place it in your `onedriveb.cfg`
+    Copy `api_folder_id` and place it in your `onedrive.cfg`
 
     export api_root_folder="items/01KB37ZVWEMG6F4SS6TVGZAM7ACZKOEERY"
 
