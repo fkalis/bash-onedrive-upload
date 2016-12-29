@@ -19,18 +19,19 @@ while [[ $# -ge 1 ]]; do
             echo "Usage: ${script_base_name} [OPTIONS] file1 [file2...]"
             echo ""
             echo "Options:"
-            echo "  .d, --debug   Enable debug mode."
-            echo "  -f, --folder  Upload files into this remote folder."
-            echo "                Directory names are separated with a slash, e.g."
-            echo "                rootFolder/subFolder"
-            echo "                Do NOT use a trailing slash!"
-            echo "  -h, --help    Show this help."
-            echo "  -r, --rename  Rename the files during upload."
-            echo "                For each file you specify you MUST also specify"
-            echo "                the remote filename as the subsequent parameter."
-            echo "                WARNINGS:"
-            echo "                1. Be especially careful with globbing."
-            echo "                2. This disables recursive uploads."
+            echo "  .d, --debug    Enable debug mode."
+            echo "      --dotfiles Upload dotfiles."
+            echo "  -f, --folder   Upload files into this remote folder."
+            echo "                 Directory names are separated with a slash, e.g."
+            echo "                 rootFolder/subFolder"
+            echo "                 Do NOT use a trailing slash!"
+            echo "  -h, --help     Show this help."
+            echo "  -r, --rename   Rename the files during upload."
+            echo "                 For each file you specify you MUST also specify"
+            echo "                 the remote filename as the subsequent parameter."
+            echo "                 WARNINGS:"
+            echo "                 1. Be especially careful with globbing."
+            echo "                 2. This disables recursive uploads."
             exit 0
             ;;
         -f|--folder)
@@ -45,6 +46,10 @@ while [[ $# -ge 1 ]]; do
         -d|--debug)
             shift
             debug_mode=1
+            ;;
+        --dotfiles)
+            shift
+            shopt -s dotglob
             ;;
         *)
             break;
@@ -128,6 +133,8 @@ export -f start_recursive_upload
 
 if [ -n "${folder_name}" ]; then
     resolve_folder_id ""
+else
+    resolved_folder_id=${api_root_folder}
 fi
 
 if [ "${rename_mode}" == "0" ]; then

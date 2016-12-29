@@ -122,6 +122,14 @@ It is also possible to recursively upload a whole folder
     # OneDrive for Business
     # Not yet supported
 
+If this folder contains hidden files (files starting with a dot) and you want to include them, just type
+
+    # OneDrive Personal
+    $ ./onedrive-upload --dotfiles /path/to/folder
+
+    # OneDrive for Business
+    # Not yet supported
+
 You can also specify a destination folder relative to the root folder configured in `onedrive.cfg`:
 
     # OneDrive Personal
