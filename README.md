@@ -153,19 +153,20 @@ Be aware that for each file you specify you must provide the remote filename as 
 Configuration
 -------------
 
-### Specify an alternate root folder for uploads
+### Specify an alternate root folder for uploads (OneDrive Personal)
 
-If you want to use a folder other than the root folder of your OneDrive as your upload root folder, you need to retrieve its unique id.
+If you want to use a folder other than the root folder of your OneDrive as your upload root folder, just enter the human readable, slash separated path into
 
-Open your the [OneDrive Web Interface](https://onedrive.live.com) and navigate to the folder, you want to configure as your new upload folder. The address bar should now show a URL like
+    export api_root_folder="/path/to/folder"
 
-    https://onedrive.live.com/?cid=123419ACDA5678AB&id=123419ACDA5678AB%2145321
+You can also use any of the [special folders](https://dev.onedrive.com/items/special_folders.htm) provided by the API by simply using the combination
 
-The GET-parameter `id` is the unique folder id you need to place in your `onedrive.cfg`. You have to work with the decoded URL, e.g. `%21` decodes to `!`:
+    export api_drive_resource="special/approot"
+    export api_root_folder="/path/relative/to/special/folder"
 
-    export api_root_folder="items/123419ACDA5678AB!45321"
+### Specify an alternate root folder for uploads (OneDrive for Business)
 
-Unfortunately, you can't get item ID in this way for OneDrive for Business. So use another approach:
+If you want to use a folder other than the root folder of your OneDrive as your upload root folder, you need to retrieve its unique id by using this approach:
 
     Upload in debug mode any file to non-existent folder, which will be used as root folder.
 
