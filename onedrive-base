@@ -59,6 +59,7 @@ function curl_create_folder() {
 	debug "Creating folder $1"
 
 	local json_payload="{\"folder\":{},\"@name.conflictBehavior\":\"replace\"}"
+	local resource=$(urlencode "$1")
 
 	curl \
 		${curl_opts} \
@@ -67,7 +68,7 @@ function curl_create_folder() {
 		--write-out "%{http_code}" \
 		--header "Content-Type: application/json" \
 		--data "${json_payload}" \
-		"${api_base_url}/drive/$1?access_token=${api_access_token}"
+		"${api_base_url}/drive/${resource}?access_token=${api_access_token}"
 }
 
 function curl_upload_file() {
@@ -250,7 +251,7 @@ function onedrive_build_remote_local_pairs_recursion() {
 				remote_filename=$(basename "$1")
 			fi
 
-			remote_local_pairs+=("${api_drive_resource}:${current_remote_path}/${remote_filename}:")
+			remote_local_pairs+=($(urlencode "${api_drive_resource}:${current_remote_path}/${remote_filename}:"))
 			remote_local_pairs+=("$local_path")
 		elif [ -d "$1" ]; then
 			local next_local_path="${1%/}"
