@@ -37,6 +37,7 @@ while [[ $# -ge 1 ]]; do
         -f|--folder)
             shift
             folder_name="${1%/}"
+            folder_name="${folder_name#/}"
             shift
             ;;
         -r|--rename)
@@ -62,91 +63,21 @@ if [ -z "$1" ]; then
         exit 1
 fi
 
-# $1=subfolder name
-function resolve_folder_id() {
-    local folder_array
-    local subfolder=${1#/}
-
-    if [ -n "${folder_name}" ]; then
-        IFS='/' read -a folder_array <<< "${folder_name}/${subfolder}"
-    else
-        IFS='/' read -a folder_array <<< "${subfolder}"
-    fi
-
-    resolved_folder_id=$(onedrive_get_or_create_folder "${folder_array[@]}")
-    exit_on_error
-}
-
-function expand_directories() {
-    local current_id=$1
-    shift
-
-    local prefix_len=$1
-    shift
-
-    while [[ $# -ge 1 ]]; do
-        if [ -f "$1" ]; then
-            files+=("${current_id}")
-            files+=("$1")
-        elif [ -d "$1" ]; then
-            if [ ${prefix_len} -eq -1 ]; then
-                local directory=$(dirname "$1")
-
-                if [ "${directory}" == "." ]; then
-                    prefix_len=0
-                else
-                    prefix_len=${#directory}
-                fi
-            fi
-
-            local folder="${1%/}"
-            resolve_folder_id "${1:${prefix_len}}"
-
-            local sub=("${folder}/"*)
-
-            if test -e "${sub}"; then
-                expand_directories "${resolved_folder_id}" "${prefix_len}" "${sub[@]}"
-            fi
-        else
-            echo "File not found $1"
-            exit 1
-        fi
-
-        shift
-    done
-}
-
-function start_upload() {
-    source "${script_base_folder}/onedrive-base"
-
-    onedrive_upload_file "$1" "$2"
-}
-export -f start_upload
-
 function start_recursive_upload() {
     source "${script_base_folder}/onedrive-base"
 
-    export api_folder_id="$1"
+    api_upload_destination="$1"
     onedrive_upload_file "$2"
 }
 export -f start_recursive_upload
 
-if [ -n "${folder_name}" ]; then
-    resolve_folder_id ""
+global_path_prefix="${api_root_folder%/}/${folder_name}"
+global_path_prefix=${global_path_prefix%/}
+
+onedrive_build_remote_local_pairs "${global_path_prefix}" "${@}"
+
+if [ ${#remote_local_pairs} -eq 0 ]; then
+    info "Folder structure created, no files uploaded"
 else
-    resolved_folder_id=${api_root_folder}
+    printf "%s\0" "${remote_local_pairs[@]}" | xargs -0 -n2 -P${max_upload_threads} bash -c 'start_recursive_upload "$1" "$2"' bash
 fi
-
-if [ "${rename_mode}" == "0" ]; then
-    expand_directories "${resolved_folder_id}" -1 "${@}"
-
-    if [ ${#files} -eq 0 ]; then
-        info "Folder structure created, no files uploaded"
-    else
-        printf "%s\0" "${files[@]}" | xargs -0 -n2 -P${max_upload_threads} bash -c 'start_recursive_upload "$1" "$2"' bash
-    fi
-else
-    export api_folder_id="${resolved_folder_id}"
-    printf "%s\0" "${@}" | xargs -0 -n2 -P${max_upload_threads} bash -c 'start_upload "$1" "$2"' bash
-fi
-
