@@ -71,10 +71,9 @@ function curl_create_folder() {
 }
 
 function curl_upload_file() {
-	local url_filename=$(urlencode "${remote_filename}")
 	local url="${api_base_url}/drive/${api_upload_destination}/content?access_token=${api_access_token}&@name.conflictBehavior=replace"
 
-	debug "Uploading '${file}' as '${remote_filename}' into ${api_upload_destination}"
+	debug "Uploading '${file}' into ${api_upload_destination}"
 
 	curl \
 		${curl_opts} \
@@ -86,11 +85,10 @@ function curl_upload_file() {
 }
 
 function curl_request_upload_session() {
-	local url_filename=$(urlencode "${remote_filename}")
-	local json_payload="{\"item\":{\"@name.conflictBehavior\":\"replace\",\"name\":\"${remote_filename}\"}}"
+	local json_payload="{\"item\":{\"@name.conflictBehavior\":\"replace\"}}"
 	local url="${api_base_url}/drive/${api_upload_destination}/upload.createSession?access_token=${api_access_token}"
 
-	debug "Uploading '${file}' as '${remote_filename}' into ${api_upload_destination}"
+	debug "Uploading '${file}' into ${api_upload_destination}"
 
 	curl \
 		${curl_opts} \
@@ -237,7 +235,7 @@ function onedrive_build_remote_local_pairs_recursion() {
 	local top_level="$1"
 	shift
 
-	local current_remote_path="$1"
+	local current_remote_path="${1%/}"
 	shift
 
 	while [[ $# -ge 1 ]]; do
