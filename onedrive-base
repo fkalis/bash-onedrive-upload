@@ -263,7 +263,7 @@ function onedrive_acquire_access_token() {
 # --------------------------------- #
 # $1=file
 function filesystem_get_filesize() {
-	if [[ $(uname) == "Darwin" ]]; then
+	if [[ $(uname) == "Darwin" ]] || [[ $(uname) == "FreeBSD" ]]; then
   		stat -f%z "$1"
 	else
    		stat -c%s "$1"
