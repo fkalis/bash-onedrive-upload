@@ -37,7 +37,7 @@ function urlencode() {
 # --- cURL calls --- #
 # ------------------ #
 function curl_discover_uri() {
-	local api_access_token=$(onedrive_acquire_access_token ${api_discovery_id}) 
+	local api_access_token=$(onedrive_acquire_access_token ${api_discovery_id})
 	exit_on_error
 
 	local api_parsed_json_result=$(curl \
@@ -110,7 +110,6 @@ function curl_get_access_token() {
 	    --header "Content-Type: application/x-www-form-urlencoded" \
 	    --header "Accept: application/json; odata.metadata=none" \
 	    --data-urlencode "client_id=${api_client_id}" \
-	    --data-urlencode "client_secret=${api_client_secret}" \
 	    --data-urlencode "redirect_uri=${api_reply_url}" \
 	    --data-urlencode "refresh_token=$1" \
 	    --data-urlencode "grant_type=refresh_token" \
@@ -122,7 +121,7 @@ function curl_get_access_token() {
 function curl_upload_file() {
 	local url_filename=$(urlencode "${remote_filename}")
 	local url
-	
+
 	if [ -z "$1" ]; then
 		# No folder id, upload to root folder
 		url="${api_uri}/drive/${api_root_folder}/children/${url_filename}/content"
@@ -402,7 +401,7 @@ function onedrive_upload_file_chunked() {
 					[ "${status_code}" == "502" ] || \
 					[ "${status_code}" == "503" ] || \
 					[ "${status_code}" == "504" ]; then
-				let "timeout = 2**${retry_count}" 
+				let "timeout = 2**${retry_count}"
 				let "millis = $RANDOM % 1000"
 				debug "Timeout: ${timeout}.${millis}s"
 				sleep "${timeout}.${millis}"
