@@ -404,3 +404,43 @@ function onedrive_upload_file() {
 		error "An error has occurred while uploading '${file}' (Code: ${status_code})"
 	fi
 }
+
+#
+# Deleting a file (by Rafael Guimaraes)
+#
+function onedrive_delete_file() {
+        local retry_count=0
+        local status_code=""
+        local filename="$1"
+
+        while [ ${retry_count} -lt ${file_retries} ] && \
+                        [ ! "${status_code}" == "204" ]; do
+                if [ ${retry_count} -gt 0 ]; then
+                        debug "Retrying delete of file '${filename}' (Previous code: ${status_code})"
+                fi
+
+                api_access_token=$(onedrive_acquire_access_token)
+                exit_on_error
+
+                local url="${api_base_url}/drive/root:/${filename}?access_token=${api_access_token}"
+
+                debug "Deleting '${filename}'"
+
+                curl \
+                        ${curl_opts} \
+                        --request DELETE \
+                        --output /dev/null \
+                        --write-out "%{http_code}" \
+                        "${url}"
+
+                status_code=$?
+
+                retry_count=$((retry_count+1))
+        done
+
+        if [ "${status_code}" == "204" ]; then
+                info "Successfully deleted '${filename}'"
+        else
+                error "An error has occurred while deleting '${filename}' (Code: ${status_code})"
+        fi
+}
