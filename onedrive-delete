@@ -11,8 +11,6 @@ export debug_mode=0
 export rename_mode=0
 export silent_mode=0
 
-files=()
-
 while [[ $# -ge 1 ]]; do
     case $1 in
         -h|--help)
@@ -34,7 +32,7 @@ while [[ $# -ge 1 ]]; do
 done
 
 if [ -z "$1" ]; then
-        echo "Please specify at least one file to delete"
+        echo "Please specify one file to delete"
         exit 1
 fi
 
