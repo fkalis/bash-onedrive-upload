@@ -1,0 +1,41 @@
+#!/bin/bash
+
+export script_base_folder=$(dirname "$0")
+export script_base_name=$(basename "$0")
+
+source "${script_base_folder}/onedrive.cfg"
+source "${script_base_folder}/onedrive-base"
+
+export json_parser="${script_base_folder}/libs/json/bash-json-parser"
+export debug_mode=0
+export rename_mode=0
+export silent_mode=0
+
+files=()
+
+while [[ $# -ge 1 ]]; do
+    case $1 in
+        -h|--help)
+            echo "Usage: ${script_base_name} [OPTIONS] file"
+            echo ""
+            echo "Options:"
+            echo "  .d, --debug    Enable debug mode."
+            echo "  -h, --help     Show this help."
+            exit 0
+            ;;
+        -d|--debug)
+            shift
+            debug_mode=1
+            ;;
+        *)
+            break;
+            ;;
+    esac
+done
+
+if [ -z "$1" ]; then
+        echo "Please specify at least one file to delete"
+        exit 1
+fi
+
+onedrive_delete_file "$1"
