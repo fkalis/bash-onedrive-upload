@@ -110,7 +110,6 @@ function curl_get_access_token() {
 	    --header "Content-Type: application/x-www-form-urlencoded" \
 	    --header "Accept: application/json; odata.metadata=none" \
 	    --data-urlencode "client_id=${api_client_id}" \
-	    --data-urlencode "client_secret=${api_client_secret}" \
 	    --data-urlencode "redirect_uri=${api_reply_url}" \
 	    --data-urlencode "refresh_token=$1" \
 	    --data-urlencode "grant_type=refresh_token" \

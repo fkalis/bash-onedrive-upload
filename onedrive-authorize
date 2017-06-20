@@ -9,7 +9,7 @@ echo "https://login.live.com/oauth20_authorize.srf?client_id=${api_client_id}&sc
 echo ""
 echo "When ready, please enter the value of the code parameter (from the URL of the blank page) and press return"
 read code
-api_json_result=$(curl -s -d "client_id=${api_client_id}&client_secret=${api_client_secret}&code=${code}&grant_type=authorization_code&redirect_uri=https://login.live.com/oauth20_desktop.srf" -X POST "${api_auth_url}")
+api_json_result=$(curl -s -d "client_id=${api_client_id}&code=${code}&grant_type=authorization_code&redirect_uri=https://login.live.com/oauth20_desktop.srf" -X POST "${api_auth_url}")
 
 refresh_token=$(echo "${api_json_result}" | "${json_parser}" | grep -E "^refresh_token=" | cut -d= -f2-)
 if [ "${refresh_token}" != "" ]; then

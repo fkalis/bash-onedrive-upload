@@ -9,7 +9,7 @@ echo "https://login.microsoftonline.com/common/oauth2/authorize?response_type=co
 echo ""
 echo "When ready, please enter the value of the code parameter (from the URL you have been redirected) and press return"
 read code
-api_json_result=$(curl -s -d "client_id=${api_client_id}&client_secret=${api_client_secret}&code=${code}&grant_type=authorization_code&redirect_uri=${api_reply_url}&resource=https://api.office.com/discovery/" -X POST "${api_auth_url}")
+api_json_result=$(curl -s -d "client_id=${api_client_id}&code=${code}&grant_type=authorization_code&redirect_uri=${api_reply_url}&resource=https://api.office.com/discovery/" -X POST "${api_auth_url}")
 
 refresh_token=$(echo "${api_json_result}" | "${json_parser}" | grep -E "^refresh_token=" | cut -d= -f2-)
 if [ "${refresh_token}" != "" ]; then
