@@ -1,7 +1,7 @@
 api_auth_url="https://login.live.com/oauth20_token.srf"
 api_base_url="https://api.onedrive.com/v1.0"
 get_json_value="cut -d= -f2-"
-curl_opts="--silent --retry ${http_retries} --retry-delay 10"
+curl_opts="--silent --retry ${http_retries} --retry-delay 10 -g"
 
 function error() {
 	echo "$1" >&2
