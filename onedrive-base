@@ -34,7 +34,7 @@ function urlencode() {
 		--output /dev/null \
 		--write-out "%{url_effective}" \
 		--get \
-		--data-urlencode "$1" \
+		--data-urlencode "=$1" \
 		"" | cut -b3-
 }
 
