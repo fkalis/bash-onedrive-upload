@@ -1,0 +1,140 @@
+#!/bin/bash
+
+export script_base_folder=$(dirname "$0")
+export script_base_name=$(basename "$0")
+
+source "${script_base_folder}/onedrive.cfg"
+source "${script_base_folder}/onedrive-base"
+
+export json_parser="${script_base_folder}/libs/json/bash-json-parser"
+export debug_mode=0
+export rename_mode=0
+export silent_mode=0
+
+function curl_list_drives() {
+	api_access_token=$(onedrive_acquire_access_token)
+	exit_on_error
+
+	local url="${api_base_url}/drives?access_token=${api_access_token}"
+
+	curl ${curl_opts} --request GET "${url}" | "${json_parser}"
+}
+
+function curl_list_items() {
+	api_access_token=$(onedrive_acquire_access_token)
+	exit_on_error
+
+    local p=$2
+    if [ "${p[0]}" != "/" ]; then
+        p="/$p"
+    fi
+
+    p=$(urlencode "$p")
+
+	local url="${api_base_url}/drives/$1/root:$p:/children?access_token=${api_access_token}"
+
+	curl ${curl_opts} --request GET "${url}" | "${json_parser}"
+}
+
+function as_gb() {
+    cat | awk '{ byte =$1 /1024/1024/1024; printf byte " GB" }'
+}
+
+function filter_val() {
+    cat | grep "^$1" | cut -c $(( ${#1} +  2 ))- 
+}
+
+function onedrive_list_drives() {
+	local api_parsed_json_result
+
+    api_parsed_json_result=$(curl_list_drives)
+    exit_on_error
+
+    local i
+    local res
+    local val_x
+
+    i=0
+    while true; do
+        val_x="value.$i"
+        res=$( echo "$api_parsed_json_result" | filter_val "$val_x" )
+
+        echo -n "Drive: "
+        echo "$res" | filter_val "id"
+
+        res=$( echo "$res" | filter_val "quota" )
+        echo -n "    Usage: "
+        echo -n "$res" | filter_val "used" | as_gb
+        echo -n " / "
+        echo -n "$res" | filter_val "total" | as_gb
+        echo -n ", "
+        echo -n "$res" | filter_val "remaining" | as_gb
+        echo " Free"
+
+        i=$(( i + 1 ))
+        echo $api_parsed_json_result | grep -q "value.$i"
+        if [ $? -ne 0 ]; then
+            break
+        fi
+    done
+}
+
+function onedrive_list_files() {
+	local api_parsed_json_result=$(curl_list_items "$@")
+    exit_on_error
+
+    local i
+    local res
+    local val_x
+    local is_dir
+
+    i=0
+    while true; do
+        val_x="value.$i"
+        res=$( echo "$api_parsed_json_result" | grep "^$val_x" | cut -c $(( ${#val_x} +  2 ))- )
+
+        is_dir=$( echo "$res" | filter_val "folder" )
+        if [ -n "$is_dir" ]; then
+            echo $( echo "$res" | filter_val "name" )/
+        else
+            echo "$res" | filter_val "name"
+        fi
+
+
+        i=$(( i + 1 ))
+        echo $api_parsed_json_result | grep -q "value.$i"
+        if [ $? -ne 0 ]; then
+            break
+        fi
+    done
+}
+
+while [[ $# -ge 1 ]]; do
+    case $1 in
+        -h|--help)
+            echo "Usage: ${script_base_name} [OPTIONS] path"
+            echo ""
+            echo "Options:"
+            echo "  -h, --help    Show this help"
+            echo "  --stat        Show drives status"
+            echo
+            echo "  -d, --debug   Enable debug mode"
+            exit 0
+            ;;
+        --stat)
+            shift
+            onedrive_list_drives
+            exit
+            ;;
+        *)
+            break;
+            ;;
+    esac
+done
+
+if [ -z "$1" ]; then
+        echo "Please specify the path"
+        exit 1
+fi
+
+onedrive_list_files "$@"
