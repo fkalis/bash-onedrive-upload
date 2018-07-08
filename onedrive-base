@@ -48,7 +48,7 @@ function curl_refresh_access_token() {
 	curl \
 		${curl_opts} \
 		--data-urlencode "client_id=${api_client_id}" \
-		--data-urlencode "client_secret=${api_client_secret}" \
+		--data-urlencode "redirect_uri=https://login.live.com/oauth20_desktop.srf" \
 		--data-urlencode "refresh_token=$1" \
 		--data-urlencode "grant_type=refresh_token" \
 		"${api_auth_url}" | "${json_parser}"
